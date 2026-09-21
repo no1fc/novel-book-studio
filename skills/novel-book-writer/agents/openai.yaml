@@ -1,6 +1,6 @@
 interface:
   display_name: "소설책 제작"
-  short_description: "장르 참고·인과관계 검토·읽기 쉬운 소설과 표지·PDF 제작"
+  short_description: "소재·요청문 상담부터 소설 집필·이해도 검토·표지·PDF까지"
   default_prompt: "$novel-book-writer로 비슷한 장르 작품의 기법을 참고해 독창적인 소설을 쓰고 본문만으로 사건과 인물의 선택을 이해할 수 있는지 검토한 뒤 표지와 목차가 있는 PDF 책으로 만들어 주세요."
 policy:
   allow_implicit_invocation: true

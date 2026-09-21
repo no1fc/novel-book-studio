@@ -1,11 +1,15 @@
 ---
 name: novel-book-writer
-description: Use when creating or revising a Korean novel, expanding thin scenes into readable fiction, adapting a TRPG story, or producing a novel book PDF with a cover and contents. 소설 창작, 장르 참고, 가독성 교정, 이해하기 어려운 줄거리 개선, 소설 표지 디자인과 소설책 제작에 사용한다.
+description: Use when helping users choose a novel premise or formulate a writing request, creating or revising a Korean novel, expanding thin scenes into readable fiction, adapting a TRPG story, or producing a novel book PDF with a cover and contents. 소설 창작, 장르 참고, 가독성 교정, 이해하기 어려운 줄거리 개선, 소설 표지 디자인과 소설책 제작에 사용한다.
 ---
 
 # 소설에서 한 권의 책까지
 
 독자가 장소를 상상하고, 인물의 선택을 이해하며, 다음 장을 읽고 싶어지는 **독창적인 완결 소설**을 만든다. 창작 요청은 원고 완성 후 표지·목차·본문 PDF까지 이어간다. 사용자가 시범 장면·개정만 요청하면 그 범위만 수행한다. 스킬 설치 자체는 기존 소설 전체 개작이나 공개의 허가가 아니다.
+
+## 무엇을 요청할지 모를 때
+
+'소설을 쓰고 싶은데 어떻게 요청하지?', '장르만 정했어', '요청 양식을 채워 줘' 같은 요청에는 먼저 [request-builder.md](references/request-builder.md)를 읽는다. 정해진 조건을 보존하면서 필요한 선택지와 추천을 제시하고, 복사 가능한 제작 요청문을 완성한다. 조건이 충분하면 추가 질문 없이 작성한다. **요청문만 원하는 단계에서는 소설 집필이나 PDF 제작을 시작하지 않는다.** 제작까지 맡겼거나 이후 '이대로 제작'을 요청하면 확정한 내용을 브리프로 사용한다.
 
 ## 시작과 작업 크기
 

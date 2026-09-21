@@ -1,0 +1,4 @@
+weasyprint==70.0
+pypdf==6.19.0
+# PDF text/link/layout QA only (not imported by the builder).
+PyMuPDF==1.28.2

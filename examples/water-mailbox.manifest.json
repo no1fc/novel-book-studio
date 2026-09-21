@@ -1,0 +1,20 @@
+{
+  "source_sha256": "8c21b48478b7a04c8f3a652867bc23701d4d1716fdbd7fcba310bb61dd8e0c0e",
+  "page_count": 9,
+  "contents_pdf_page": 3,
+  "chapters": [
+    {
+      "title": "1장. 돌아온 봉투",
+      "pdf_page": 4
+    },
+    {
+      "title": "2장. 문이 있던 자리",
+      "pdf_page": 6
+    },
+    {
+      "title": "3장. 새 주소",
+      "pdf_page": 8
+    }
+  ],
+  "page_numbering": "physical PDF pages, starting at 1"
+}

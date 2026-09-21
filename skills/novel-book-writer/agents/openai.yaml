@@ -1,0 +1,6 @@
+interface:
+  display_name: "소설책 제작"
+  short_description: "장르 참고부터 풍부한 소설 집필·가독성 교정·PDF 제작까지"
+  default_prompt: "$novel-book-writer로 비슷한 장르 작품의 기법을 참고해 독창적이고 읽기 편한 소설을 쓰고 표지와 목차가 있는 PDF 책으로 만들어 주세요."
+policy:
+  allow_implicit_invocation: true

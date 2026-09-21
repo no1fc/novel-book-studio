@@ -118,6 +118,67 @@ class BookTests(unittest.TestCase):
 class CoverDesignTests(unittest.TestCase):
     run_builder = BookTests.run_builder
 
+    def test_cover_layouts_title_placement_and_manual_lines(self):
+        from PIL import Image
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source, output, art = root/'story.md', root/'book.pdf', root/'art.png'
+            source.write_text('## 첫 장\n\n온전한 본문.\n', encoding='utf-8')
+            Image.new('RGB', (296, 420), '#426970').save(art)
+            title_positions = {}
+            for layout, position in [('auto', 'top'), ('fullbleed', 'bottom'), ('framed', 'top'), ('typographic', 'top')]:
+                with self.subTest(layout=layout, position=position):
+                    extra = ['--cover-layout', layout, '--cover-title-position', position,
+                             '--cover-title-lines', '해안의|우편함']
+                    if layout != 'typographic':
+                        extra += ['--cover-image', str(art)]
+                    result = self.run_builder(source, output, '해안의 우편함', *extra)
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    manifest = json.loads(output.with_suffix('.manifest.json').read_text())
+                    expected = 'fullbleed' if layout == 'auto' else layout
+                    self.assertEqual(manifest['design']['cover_layout'], expected)
+                    self.assertEqual(manifest['design']['cover_title_position'], position)
+                    self.assertEqual(manifest['design']['cover_title_lines'], ['해안의', '우편함'])
+                    with fitz.open(output) as pdf:
+                        cover = pdf[0]
+                        self.assertIn('해안의\n우편함', cover.get_text())
+                        self.assertIn('테스트작가', compact(cover.get_text()))
+                        title_positions[layout] = cover.search_for('해안의')[0].y0
+                        if expected == 'fullbleed':
+                            bounds = fitz.Rect(cover.get_image_info()[0]['bbox'])
+                            self.assertLessEqual(bounds.x0, 1)
+                            self.assertLessEqual(bounds.y0, 1)
+                            self.assertGreaterEqual(bounds.x1, cover.rect.width - 1)
+                            self.assertGreaterEqual(bounds.y1, cover.rect.height - 1)
+                        elif expected == 'framed':
+                            bounds = fitz.Rect(cover.get_image_info()[0]['bbox'])
+                            self.assertGreater(bounds.x0, 10)
+                            self.assertGreater(bounds.y0, 10)
+                            self.assertLess(bounds.x1, cover.rect.width - 10)
+                        else:
+                            self.assertFalse(cover.get_images())
+                        for word in cover.get_text('words'):
+                            self.assertGreaterEqual(word[0], 0)
+                            self.assertLessEqual(word[2], cover.rect.width)
+                            self.assertGreaterEqual(word[1], 0)
+                            self.assertLessEqual(word[3], cover.rect.height)
+            self.assertGreater(title_positions['fullbleed'], title_positions['auto'] + 150)
+
+    def test_invalid_cover_options_preserve_existing_outputs(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source, output = root/'story.md', root/'book.pdf'
+            source.write_text('## 첫 장\n\n온전한 본문.\n', encoding='utf-8')
+            output.write_bytes(b'existing output')
+            for options in [('--cover-title-lines', '다른|제목'), ('--cover-title-lines', '해안의||우편함'),
+                            ('--cover-title-lines', '해|안|의|우편|함'),
+                            ('--cover-layout', 'fullbleed'), ('--cover-layout', 'framed')]:
+                with self.subTest(options=options):
+                    result = self.run_builder(source, output, '해안의 우편함', *options)
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn('error:', result.stderr.lower())
+                    self.assertEqual(output.read_bytes(), b'existing output')
+
     def test_genre_palette_and_real_cover_image(self):
         from PIL import Image
         with tempfile.TemporaryDirectory() as directory:
@@ -131,7 +192,7 @@ class CoverDesignTests(unittest.TestCase):
             self.assertEqual(manifest['design']['genre'], 'mystery')
             self.assertEqual(manifest['design']['cover_image_sha256'], hashlib.sha256(art.read_bytes()).hexdigest())
             pdf = fitz.open(output)
-            self.assertTrue(pdf[0].get_images(), 'Real illustration must be embedded on cover')
+            self.assertTrue(pdf[0].get_image_info(), 'Real illustration must be rendered on cover, including background patterns')
             self.assertIn('해안의우편함', compact(pdf[0].get_text()))
             self.assertTrue(any(span['color'] == int('edf4ef',16)
                                 for b in pdf[0].get_text('dict')['blocks'] if 'lines' in b

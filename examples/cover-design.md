@@ -17,3 +17,20 @@
 ```text
 Use case: illustration-story. Create an original cover illustration for a Korean quiet coastal mystery-fantasy short novel titled '물이 빠진 뒤의 우편함', but DO NOT include any lettering, typography, logo, watermark or book mockup. Portrait 1024x1536. Scene: an old Korean coastal alley at low tide in the early morning, a small worn tin mailbox hangs near a weathered sea-green doorway, a single cream envelope visible at its slot, wet stone paving and a narrow glimpse of the receding sea. No people. Atmospheric, intimate, wistful but gently hopeful, believable tactile salt and peeling paint, painterly literary editorial illustration with fine brush texture, soft mist, muted midnight navy and sea teal with small warm amber reflected light. Focus on mailbox and envelope in lower-middle part. Upper quarter quiet misty negative space. No supernatural figures, no dramatic horror, no extra story symbols. A flat illustration ready to be used in a book cover design; leave typography to the PDF layout.
 ```
+
+
+## 이해도 개정본의 표지 재구성
+
+`water-mailbox-revised.pdf`는 같은 AI 원본 그림을 전면 배치했다. 이번 수정에서 새 그림을 생성하지 않았다. 색은 기존 mystery 팔레트를 유지하고 제목은 '물이 빠진 뒤의 / 우편함' 두 행으로 나누었다. 하단 우편함과 봉투를 가리지 않도록 상단에 제목을 두고, 저자 표기는 사실에 맞게 'AI 창작 예제'로 했다. 불필요한 부제는 생략했다.
+
+전면 삽화 위 제목 받침 면은 글자 대비를 확보한다. 그림은 비율을 유지해 페이지를 채우며 옆 가장자리가 일부 잘리지만 핵심 우편함과 봉투는 보존한다. 첨부 참고 표지에서 가져온 것은 이미지와 제목의 위계·구도 원리이며 원본 인물이나 장식은 재사용하지 않았다. 최종 렌더링은 전체 크기와 폭 140px 축소본으로 확인한다.
+
+```bash
+python skills/novel-book-writer/scripts/build_book.py \
+  --manuscript examples/manuscript-revised.md \
+  --output examples/water-mailbox-revised.pdf \
+  --title '물이 빠진 뒤의 우편함' --author 'AI 창작 예제' \
+  --genre mystery --cover-image examples/cover-coastal.png \
+  --cover-layout fullbleed --cover-title-position top \
+  --cover-title-lines '물이 빠진 뒤의|우편함'
+```

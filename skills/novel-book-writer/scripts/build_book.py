@@ -59,6 +59,27 @@ def inline(text):
     return escaped.replace("\n", "<br>")
 
 
+def cover_title(args):
+    if args.cover_title_lines is None:
+        return html.escape(args.title), None
+    lines = [line.strip() for line in args.cover_title_lines.split("|")]
+    if not 1 <= len(lines) <= 4 or not all(lines):
+        raise ValueError("--cover-title-lines needs 1 to 4 nonempty lines separated by |")
+    if re.sub(r"\s+", "", "".join(lines)) != re.sub(r"\s+", "", args.title):
+        raise ValueError("--cover-title-lines must match --title, ignoring whitespace")
+    return "<br>".join(map(html.escape, lines)), lines
+
+
+def cover_panel(palette):
+    """Keep cover text readable even over the lightest/darkest possible image."""
+    channels = [int(palette["cover_background"][i:i + 2], 16) for i in (1, 3, 5)]
+    for opacity in range(90, 101):
+        backgrounds = ["#" + "".join(f"{round(c * opacity / 100 + edge * (100 - opacity) / 100):02x}"
+                                    for c in channels) for edge in (0, 255)]
+        if all(contrast(palette["cover_text_color"], color) >= 4.5 for color in backgrounds):
+            return f"rgba({','.join(map(str, channels))},{opacity / 100})"
+
+
 def parse_manuscript(text):
     preamble, chapters, paragraph = [], [], []
     blocks = preamble
@@ -122,7 +143,7 @@ body { margin: 0; line-height: 1.75; overflow-wrap: anywhere; }
 h1, h2 { font-weight: 500; line-height: 1.5; margin: 0; }
 h1 { font-size: 25pt; bookmark-level: none; }
 h2 { font-size: 18pt; margin-bottom: 10mm; bookmark-level: 1; }
-p { margin: 0 0 2mm; text-indent: 1em; orphans: 3; widows: 3; }
+p { margin: 0 0 1mm; text-indent: 1em; orphans: 3; widows: 3; }
 strong { font-weight: bold; }
 .cover { page: cover; break-after: page; color: #f8f3e8; text-align: center; padding-top: 18mm; }
 .cover h1 { bookmark-level: 1; bookmark-label: "표지"; break-inside: auto; }
@@ -170,6 +191,16 @@ def build(args):
     for value, label in [(args.title, "title"), (args.author, "author"), (args.font_family, "font family")]:
         if not value.strip():
             raise ValueError(f"{label} must not be empty")
+    cover_heading, title_lines = cover_title(args)
+    layout = args.cover_layout
+    if layout == "auto":
+        layout = "fullbleed" if args.cover_image else "typographic"
+    if layout in ("fullbleed", "framed") and not args.cover_image:
+        raise ValueError(f"--cover-layout {layout} requires --cover-image")
+    if layout == "typographic" and args.cover_image:
+        raise ValueError("--cover-layout typographic is image-free; remove --cover-image")
+    if args.cover_title_position != "top" and layout != "fullbleed":
+        raise ValueError("--cover-title-position bottom requires the fullbleed layout")
     raw = source.read_bytes()
     preamble, chapters = parse_manuscript(raw.decode("utf-8-sig"))
     font_path = args.font_file.resolve() if args.font_file else None
@@ -215,20 +246,42 @@ html, .credits { color: %(text_color)s; }
 h1, h2, .titlepage .subtitle, .toc a::after, .scene { color: %(heading_color)s; }
 .cover, .cover h1, .cover .subtitle { color: %(cover_text_color)s; }
 .ornament, .rule { border-color: %(accent_color)s; }
-.cover-art { display: block; width: 100%%; height: 90mm; object-fit: contain; margin: 0 auto 9mm; }
-.illustrated .cover { padding-top: 0; }
-.illustrated .cover h1 { font-size: 23pt; }
-.illustrated .cover .subtitle { margin-top: 5mm; }
-.illustrated .cover .author { margin-top: 7mm; }
-.long-title .cover-art { height: 43mm; margin-bottom: 5mm; }
-.long-title.illustrated .cover h1 { font-size: 16pt; }
+.cover-art { display: block; width: 100%%; height: 85mm; object-fit: contain; }
+.art-frame { box-sizing: border-box; width: 70mm; max-width: 100%%;
+  border: 0.6pt solid %(accent_color)s; padding: 3mm; margin: 0 auto 10mm; }
+.framed .cover { padding-top: 0; }
+.framed .cover h1 { font-size: 25pt; }
+.cover .subtitle { margin-top: 5mm; }
+.cover .author { margin-top: 9mm; }
+.typographic .cover { padding-top: 40mm; }
+.typographic .cover h1 { font-size: 31pt; line-height: 1.4; }
+.typographic .ornament { width: 24mm; height: 0; border: none; border-top: 0.7pt solid %(accent_color)s;
+  border-radius: 0; margin-bottom: 14mm; }
+.typographic .cover .author { margin-top: 19mm; }
+.fullbleed .cover { box-sizing: border-box; min-height: 210mm; padding: 17mm 13mm;
+  display: flex; flex-direction: column; justify-content: flex-start; }
+.fullbleed.bottom .cover { justify-content: flex-end; }
+.fullbleed .cover-copy { padding: 8mm 7mm; border-top: 0.7pt solid %(accent_color)s; }
+.fullbleed .cover h1 { font-size: 32pt; line-height: 1.35; }
+.fullbleed .cover .author { margin-top: 7mm; font-size: 10pt; }
+.long-title .cover h1 { font-size: 18pt; }
+.long-title .cover { padding-top: 8mm; }
+.long-title .cover-art { height: 43mm; }
+.long-title .art-frame { margin-bottom: 5mm; }
+.long-title.framed .cover h1 { font-size: 16pt; }
+.long-title.fullbleed .cover h1 { font-size: 22pt; }
 """ % palette
+    if layout == "fullbleed":
+        style += ("@page cover { margin: 0; background-image: url(" + css_string(image_path.as_uri())
+                  + "); background-size: cover; background-position: center; }\n"
+                  + ".fullbleed .cover-copy { background: " + cover_panel(palette) + "; }\n")
     title, author, subtitle = map(html.escape, (args.title, args.author, args.subtitle))
     subtitle_html = f'<p class="subtitle">{subtitle}</p>' if subtitle else ""
-    artwork = (f'<img class="cover-art" src="{html.escape(image_path.as_uri(), quote=True)}" '
-               f'alt="{html.escape(args.cover_image_alt, quote=True)}">') if image_path else '<div class="ornament"></div>'
-    front = (f'<section class="cover">{artwork}<h1>{title}</h1>'
-             f'{subtitle_html}<p class="author">{author}</p></section>'
+    artwork = (f'<div class="art-frame"><img class="cover-art" src="{html.escape(image_path.as_uri(), quote=True)}" '
+               f'alt="{html.escape(args.cover_image_alt, quote=True)}"></div>') if layout == "framed" else (
+                   '<div class="ornament"></div>' if layout == "typographic" else "")
+    front = (f'<section class="cover">{artwork}<div class="cover-copy"><h1>{cover_heading}</h1>'
+             f'{subtitle_html}<p class="author">{author}</p></div></section>'
              f'<section class="titlepage" id="titlepage"><h1>{title}</h1>{subtitle_html}<div class="rule"></div>'
              f'<p class="credits">{author}<br>A5 · PDF 독서본</p></section>')
     if preamble:
@@ -242,8 +295,7 @@ h1, h2, .titlepage .subtitle, .toc a::after, .scene { color: %(heading_color)s; 
         body += (f'<section class="chapter"><h2 id="{key}">{label}</h2>'
                  + "".join(chapter["blocks"]) + "</section>")
     body_class = "long-title" if len(args.title) > (32 if image_path else 80) else ""
-    if image_path:
-        body_class += " illustrated"
+    body_class += f" {layout} {args.cover_title_position}"
     document = (f'<!doctype html><html lang="ko"><head><meta charset="utf-8">'
                 f'<title>{title}</title><meta name="author" content="{author}">'
                 f'<style>{style}</style></head><body class="{body_class}">{front}{toc}</nav>{body}</body></html>')
@@ -261,6 +313,8 @@ h1, h2, .titlepage .subtitle, .toc a::after, .scene { color: %(heading_color)s; 
                 "page_count": len(reader.pages), "contents_pdf_page": anchors["contents"],
                 "chapters": chapter_pages, "page_numbering": "physical PDF pages, starting at 1",
                 "design": {"genre": args.genre, "palette": palette,
+                           "cover_layout": layout, "cover_title_position": args.cover_title_position,
+                           "cover_title_lines": title_lines,
                            "cover_image_sha256": hashlib.sha256(image_bytes).hexdigest() if image_bytes else None}}
     output.parent.mkdir(parents=True, exist_ok=True)
     # Write complete temporary files first; invalid manuscripts never touch outputs.
@@ -290,6 +344,11 @@ def main():
         parser.add_argument("--" + field.replace("_", "-"), help="Override using #RRGGBB")
     parser.add_argument("--cover-image", type=Path, help="Local PNG, JPEG or WebP illustration (optional)")
     parser.add_argument("--cover-image-alt", default="표지 삽화")
+    parser.add_argument("--cover-layout", choices=("auto", "fullbleed", "framed", "typographic"), default="auto",
+                        help="auto uses fullbleed with an image, otherwise typographic")
+    parser.add_argument("--cover-title-position", choices=("top", "bottom"), default="top",
+                        help="Title panel position on a fullbleed cover")
+    parser.add_argument("--cover-title-lines", help="Optional 1-4 title lines separated by |; must match --title")
     args = parser.parse_args()
     try:
         manifest = build(args)

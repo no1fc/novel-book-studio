@@ -43,7 +43,7 @@ python scripts/build_book.py --manuscript /path/to/manuscript.md \
 
 장르 선택: `classic`, `mystery`, `fantasy`, `romance`, `horror`, `sf`, `literary`. 생략 시 `classic`. `--cover-background`, `--cover-text-color`, `--accent-color`, `--heading-color`, `--text-color`, `--paper-color`로 각 역할의 색을 바꿀 수 있다. 색은 따옴표로 감싼 `#RRGGBB` 값이다. 장식 강조색은 글자색과 구분한다. 낮은 글자 대비, 잘못된 색 형식, 없거나 손상된 표지 이미지는 오류로 처리한다.
 
-이미지는 PNG/JPEG/WebP를 지원한다. 표지 그림과 제목 영역을 분리해 글자를 읽기 쉽게 유지한다. 빌더는 명시한 로컬 이미지·폰트만 읽으며 외부 이미지를 자동 다운로드하지 않는다. 긴 제목은 그림과 글자 크기를 줄여 배치하며, 그래도 한 쪽을 넘으면 제목·부제·저자 표기를 줄이라는 오류를 반환한다. 이미지 생성 자체는 별도 도구가 담당한다. 이미지가 없으면 장르 색상의 타이포그래피 표지를 만든다. `.manifest.json`에는 적용 색과 표지 이미지 SHA-256이 함께 기록된다.
+이미지는 PNG/JPEG/WebP를 지원한다. `--cover-layout auto`가 기본이며 이미지가 있으면 전면 삽화와 제목 패널, 없으면 타이포그래피 표지를 만든다. `framed`는 삽화와 제목을 나누어 배치한다. `fullbleed`에서는 `--cover-title-position top|bottom`으로 제목을 옮기고 `--cover-title-lines '책 제목|둘째 줄'`로 원제의 의미 단위 줄 나눔을 지정한다. 상세 선택은 표지 제작 지침을 따른다. 빌더는 명시한 로컬 이미지·폰트만 읽으며 외부 이미지를 자동 다운로드하지 않는다. 긴 제목은 그림과 글자 크기를 줄여 배치하며, 그래도 한 쪽을 넘으면 제목·부제·저자 표기를 줄이라는 오류를 반환한다. 이미지 생성 자체는 별도 도구가 담당한다. 이미지가 없으면 장르 색상의 타이포그래피 표지를 만든다. `.manifest.json`에는 적용 색·표지 구도·제목 배치와 표지 이미지 SHA-256이 함께 기록된다.
 
 ## 검증과 완료
 

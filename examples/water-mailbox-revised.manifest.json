@@ -1,0 +1,38 @@
+{
+  "source_sha256": "ea88ceb455b6600b9b766c36398d5a135963eac34c93fc12e6592b3d8c49e797",
+  "page_count": 11,
+  "contents_pdf_page": 3,
+  "chapters": [
+    {
+      "title": "1장. 받지 않은 편지",
+      "pdf_page": 4
+    },
+    {
+      "title": "2장. 아버지가 남긴 문장",
+      "pdf_page": 7
+    },
+    {
+      "title": "3장. 지금 사는 곳",
+      "pdf_page": 10
+    }
+  ],
+  "page_numbering": "physical PDF pages, starting at 1",
+  "design": {
+    "genre": "mystery",
+    "palette": {
+      "cover_background": "#172b35",
+      "cover_text_color": "#edf4ef",
+      "accent_color": "#c8a568",
+      "heading_color": "#28505a",
+      "text_color": "#26353a",
+      "paper_color": "#fafbf8"
+    },
+    "cover_layout": "fullbleed",
+    "cover_title_position": "top",
+    "cover_title_lines": [
+      "물이 빠진 뒤의",
+      "우편함"
+    ],
+    "cover_image_sha256": "b9af50dd7d579ffac39172523cb5b99bfa82c04c46172db026b61281413b75fc"
+  }
+}

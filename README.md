@@ -3,9 +3,9 @@
 
 **Novel Book Studio · 소설책 제작 스킬**
 
-비슷한 장르 작품의 기법을 참고해 독창적인 한국어 소설을 쓰고, 가독성을 교정한 뒤 표지·목차·본문이 있는 PDF 책으로 제작하는 재사용 스킬입니다.
+비슷한 장르 작품의 기법을 참고해 독창적인 한국어 소설을 쓰고, 인물의 선택과 사건의 인과관계를 검토하고 가독성을 교정한 뒤 표지·목차·본문이 있는 PDF 책으로 제작하는 재사용 스킬입니다.
 
-**장르 참고 → 이야기 설계 → 장별 집필 → 가독성 교정 → PDF 제작·검증**을 다룹니다. 기존 TRPG 각색 지침을 일반 소설에도 적용할 수 있게 발전시켰습니다. '학습'은 실제 열람 자료를 분석하는 과정이며 모델 훈련이 아닙니다.
+**장르 참고 → 이야기 설계 → 장별 집필 → 본문 단독 이해도 검사 → 가독성 교정 → 표지 디자인·PDF 검증**을 다룹니다. 기존 TRPG 각색 지침을 일반 소설에도 적용할 수 있게 발전시켰습니다. '학습'은 실제 열람 자료를 분석하는 과정이며 모델 훈련이 아닙니다.
 
 ## 설치
 
@@ -35,7 +35,7 @@ python3 -m venv .venv
 . .venv/bin/activate
 python -m pip install -r requirements.txt
 python skills/novel-book-writer/scripts/build_book.py \
-  --manuscript examples/manuscript.md \
+  --manuscript examples/manuscript-revised.md \
   --output output/water-mailbox.pdf \
   --title '물이 빠진 뒤의 우편함' \
   --author 'AI 창작 예제' --subtitle '소설책 제작 스킬 · 짧은 시연'
@@ -50,7 +50,9 @@ python skills/novel-book-writer/scripts/build_book.py \
 - [SKILL.md](skills/novel-book-writer/SKILL.md): 에이전트가 읽는 진입점
 - `references/`: 참고 자료 분석, 창작, 교정, 각색, PDF 제작 지침
 - `scripts/build_book.py`: 재사용 PDF 제작 도구
-- [창작 예제](examples/manuscript.md), [PDF 시연본](examples/water-mailbox.pdf), [참고·교정 기록](examples/research-and-revision.md)
+- [개정 창작 예제](examples/manuscript-revised.md), [개정 PDF](examples/water-mailbox-revised.pdf), [이해도 개선 기록](examples/comprehension-revision.md)
+- [작법·표지 참고 범위](docs/writing-reference.md)
+- 이전 원고와 PDF는 비교용으로 보존했습니다. 사건 이해에 문제가 확인되어 현재 권장 예제는 개정본입니다.
 - [검증 기록](docs/validation.md): 실제 실행 범위와 미검증 사항
 
 기본 완성물은 원고, 독서용 PDF, 참고 목록, 집필·검토 메모입니다. 장편은 장별로 진행 상황을 저장합니다. 짧은 시범이나 개정만 요청하면 불필요한 책 전체 제작을 강요하지 않습니다.
@@ -61,7 +63,7 @@ python skills/novel-book-writer/scripts/build_book.py \
 python -m unittest discover -s tests -v
 ```
 
-PDF 텍스트 검사와 실제 렌더링을 함께 수행해야 합니다. PDF가 생성됐다는 사실만으로 시각 검토가 완료된 것은 아닙니다. 인쇄소 납품 규격은 별도 확인이 필요합니다.
+설정집 없이 원고만 읽고 목표·선택 이유·사건 조건·결말의 변화를 본문 근거로 설명하는 검사를 먼저 수행합니다. 중요한 인과가 불명확하면 원고를 수정한 뒤 최종 PDF를 제작합니다. 독립 AI 검사는 사람 독자의 감상 평가와 다릅니다. PDF 텍스트 검사와 실제 렌더링도 함께 수행해야 합니다. PDF가 생성됐다는 사실만으로 시각 검토가 완료된 것은 아닙니다. 인쇄소 납품 규격은 별도 확인이 필요합니다.
 
 ## 공개 범위와 이용
 
@@ -73,11 +75,11 @@ PDF 텍스트 검사와 실제 렌더링을 함께 수행해야 합니다. PDF�
 
 ```bash
 python skills/novel-book-writer/scripts/build_book.py \
-  --manuscript examples/manuscript.md --output output/illustrated-book.pdf \
+  --manuscript examples/manuscript-revised.md --output output/illustrated-book.pdf \
   --title '물이 빠진 뒤의 우편함' --author 'AI 창작 예제' \
   --genre mystery --cover-image examples/cover-coastal.png
 ```
 
-`--cover-background`, `--cover-text-color`, `--accent-color`, `--heading-color`, `--text-color`, `--paper-color`는 `'#RRGGBB'`로 덮어쓸 수 있습니다. 지원 이미지는 로컬 PNG/JPEG/WebP입니다. 표지 이미지 영역과 실제 제목 글자를 분리하여 글자가 그림에 묻히지 않게 합니다.
+`--cover-background`, `--cover-text-color`, `--accent-color`, `--heading-color`, `--text-color`, `--paper-color`는 `'#RRGGBB'`로 덮어쓸 수 있습니다. 지원 이미지는 로컬 PNG/JPEG/WebP입니다. `--cover-layout auto|fullbleed|framed|typographic`으로 구도를 고릅니다. 기본값 `auto`는 이미지가 있으면 전면 삽화, 없으면 타이포그래피입니다. 전면 삽화의 제목은 `--cover-title-position top|bottom`으로 배치하며 대비를 확보한 패널 위에 실제 글자로 조판합니다. `--cover-title-lines '물이 빠진 뒤의|우편함'`처럼 최대 4행으로 나눌 수 있습니다. 실제 표지를 크게·작게 렌더링해 제목과 그림의 관계를 확인해야 합니다.
 
 [표지 제작 지침](skills/novel-book-writer/references/cover-design.md)과 [AI 표지 제작 기록](examples/cover-design.md)을 참고하세요. 이미지 생성 기능은 에이전트 환경에 따라 달라지며 별도 제공업체 이용 조건이 적용될 수 있습니다. 본문 삽화는 현재 CLI가 지원하지 않습니다.

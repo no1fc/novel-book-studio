@@ -22,7 +22,7 @@ description: Use when creating or revising a Korean novel, expanding thin scenes
 2. **상상력과 설계** — [fiction-craft.md](references/fiction-craft.md)를 읽는다. 서로 다른 발상 후보를 짧게 비교해 하나를 선택하고, 욕망·갈등·세계의 제약·결말을 인과로 묶는다. `story-bible.md`와 `outline.md`에 연표·지식·복선·장별 변화를 남긴다. TRPG 각색일 때만 [adaptation.md](references/adaptation.md)를 추가로 읽는다.
 3. **실제 집필** — 장별 목표·행동·관계 변화가 있는 본문을 `manuscript.md`에 쓴다. 중요한 선택은 대화와 행동이 벌어지는 장면으로 펼치고 이동·반복은 요약한다. 독자가 상상할 구체성을 보강하되 모든 문장을 묘사로 채우지 않는다.
 4. **개정** — [revision.md](references/revision.md)에 따라 구조·장면·문장을 순차 교정한다. `revision-notes.md`에 문제 문장/장면, 수정, 확인 근거를 기록한다. 원전 없는 독자 관점에서 이해가 끊기는 곳을 직접 고친다. 점수나 문자 수만으로 문학적 완성도를 인증하지 않는다.
-5. **책 제작** — 원고의 결말과 누락 여부를 확인한 뒤 [book-production.md](references/book-production.md)를 읽고 PDF를 만든다. 표지, 속표지, 자동 목차, 본문, 요청된 후일담 순서다. 조사·검토 메모는 본문 밖에 둔다.
+5. **책 제작** — 원고의 결말과 누락 여부를 확인한 뒤 [book-production.md](references/book-production.md)를 읽고 PDF를 만든다. [cover-design.md](references/cover-design.md)에 따라 장르·정서에 맞는 표지와 글자 색을 선택하고, 몰입에 도움이 되거나 요청된 경우 AI 삽화를 생성해 사용한다. 표지, 속표지, 자동 목차, 본문, 요청된 후일담 순서다. 조사·검토 메모는 본문 밖에 둔다.
 6. **전달** — 원고, PDF, 실제 읽은 참고 목록, 검토 기록을 전달한다. 미검증 항목과 사람 독자 평가 여부를 구분한다. GitHub·외부 출판은 그 작업에 대한 사용자 요청이 있을 때만 수행한다.
 
 ## 완료 판단

@@ -115,6 +115,58 @@ class BookTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertFalse(output.exists())
 
+class CoverDesignTests(unittest.TestCase):
+    run_builder = BookTests.run_builder
+
+    def test_genre_palette_and_real_cover_image(self):
+        from PIL import Image
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source, output, art = root / 'story.md', root / 'book.pdf', root / 'cover.png'
+            source.write_text('## 첫 장\n\n그녀는 우편함을 열었다.\n', encoding='utf-8')
+            Image.new('RGB', (180, 260), '#426970').save(art)
+            result = self.run_builder(source, output, '해안의 우편함', '--genre', 'mystery', '--cover-image', str(art))
+            self.assertEqual(result.returncode, 0, result.stderr)
+            manifest = json.loads(output.with_suffix('.manifest.json').read_text())
+            self.assertEqual(manifest['design']['genre'], 'mystery')
+            self.assertEqual(manifest['design']['cover_image_sha256'], hashlib.sha256(art.read_bytes()).hexdigest())
+            pdf = fitz.open(output)
+            self.assertTrue(pdf[0].get_images(), 'Real illustration must be embedded on cover')
+            self.assertIn('해안의우편함', compact(pdf[0].get_text()))
+            self.assertTrue(any(span['color'] == int('edf4ef',16)
+                                for b in pdf[0].get_text('dict')['blocks'] if 'lines' in b
+                                for l in b['lines'] for span in l['spans']))
+            self.assertIn('그녀는우편함을열었다.', compact(''.join(p.get_text() for p in pdf)))
+            long_title = ('바닷가에서 사라진 편지를 찾아가는 사람들의 이야기 ' * 3)[:70]
+            long_result = self.run_builder(source, output, long_title, '--genre', 'mystery',
+                                           '--cover-image', str(art), '--subtitle', '늦게 도착한 마음의 기록')
+            self.assertEqual(long_result.returncode, 0, long_result.stderr)
+            with fitz.open(output) as long_pdf:
+                self.assertIn(compact(long_title), compact(long_pdf[0].get_text()))
+                self.assertIn('테스트작가', compact(long_pdf[0].get_text()))
+            original = output.read_bytes()
+            for extra in [('--text-color', '#ffffff'), ('--cover-text-color', '#172b35'),
+                          ('--accent-color', 'red; color:white'), ('--cover-image', str(root/'missing.png'))]:
+                bad = self.run_builder(source, output, '제목', '--genre', 'mystery', *extra)
+                self.assertNotEqual(bad.returncode, 0, bad.stdout)
+                self.assertEqual(output.read_bytes(), original)
+
+    def test_custom_colors_are_applied_to_text_and_page(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source, output = Path(directory)/'story.md', Path(directory)/'book.pdf'
+            source.write_text('## 봄날\n\n다시 만난 두 사람.\n', encoding='utf-8')
+            result = self.run_builder(source, output, '편지', '--genre', 'romance',
+                                      '--text-color', '#382830', '--paper-color', '#fffaf5',
+                                      '--heading-color', '#663344')
+            self.assertEqual(result.returncode, 0, result.stderr)
+            pdf = fitz.open(output)
+            spans = [s for p in pdf for b in p.get_text('dict')['blocks'] if 'lines' in b
+                     for l in b['lines'] for s in l['spans']]
+            self.assertTrue(any(s['color'] == int('382830',16) for s in spans))
+            self.assertTrue(any(s['color'] == int('663344',16) for s in spans))
+            color = pdf[-1].get_pixmap().pixel(2,2)
+            self.assertTrue(all(abs(a-b)<=1 for a,b in zip(color,(255,250,245))),color)
+
 
 if __name__ == "__main__":
     unittest.main()

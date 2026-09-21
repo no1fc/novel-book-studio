@@ -8,7 +8,7 @@
 
 ## 기본 제작 도구
 
-이 스킬의 `scripts/build_book.py`는 WeasyPrint와 pypdf로 한글 소설을 조판한다. 스킬 폴더를 기준으로 실행한다. 현재 플랫폼에 필요한 라이브러리가 있으면 재사용하고, 없으면 격리 가상환경에 설치한다. 저장소 루트의 `requirements.txt`와 설치 설명을 참고한다. 설치본에 루트 파일이 없다면 `python -m pip install weasyprint pypdf pymupdf`로 준비할 수 있다. WeasyPrint의 OS별 Pango·폰트 요구 사항은 공식 설치 문서를 확인한다.
+이 스킬의 `scripts/build_book.py`는 WeasyPrint와 pypdf로 한글 소설을 조판한다. 스킬 폴더를 기준으로 실행한다. 현재 플랫폼에 필요한 라이브러리가 있으면 재사용하고, 없으면 격리 가상환경에 설치한다. 저장소 루트의 `requirements.txt`와 설치 설명을 참고한다. 설치본에 루트 파일이 없다면 `python -m pip install weasyprint==70.0 pypdf pymupdf Pillow`로 준비할 수 있다. WeasyPrint의 OS별 Pango·폰트 요구 사항은 공식 설치 문서를 확인한다.
 
 ```bash
 python scripts/build_book.py --manuscript /path/to/manuscript.md \
@@ -29,7 +29,21 @@ python scripts/build_book.py --manuscript /path/to/manuscript.md \
 
 표지 → 속표지 → 자동 목차 → 장별 본문 순서로 제작한다. 표지에는 제목·저자·부제를 두고 본문은 약 11pt, 충분한 행간과 양면 여백으로 읽기 편하게 유지한다. 목차 숫자는 **표지를 1쪽으로 센 PDF 실제 쪽수**이며 각 장으로 이동한다. 별도 본문 쪽번호 체계가 필요하면 도구를 조정한 뒤 링크·라벨·표시 번호를 함께 검증한다.
 
-표지 삽화를 요청받으면 사용 가능한 이미지 생성 도구로 원고의 고유 모티프를 제작하거나 허가된 이미지를 사용한다. 해당 도구가 없으면 타이포그래피 표지를 완성하고 선택한 방식을 보고한다. 기본 빌더는 타이포그래피 표지용이며 삽화 파일 옵션은 제공하지 않는다. 삽화가 필수이면 조판 코드를 명시적으로 확장하거나 다른 PDF 도구로 통합한 뒤 동일한 검증을 수행한다. 기존 상업 소설의 표지·로고를 복제하지 않는다.
+## 장르 색감과 표지 그림
+
+[cover-design.md](cover-design.md)에 따라 장르·정서별 색감과 AI 이미지 제작 방향을 정한다. 생성 도구로 만든 그림이나 사용 권한이 있는 로컬 그림을 표지에 삽입할 수 있다.
+
+```bash
+python scripts/build_book.py --manuscript /path/to/manuscript.md \
+  --output /path/to/output/book.pdf --title '책 제목' --author '저자 표기' \
+  --genre mystery --cover-image /path/to/cover.png \
+  --cover-image-alt '썰물 뒤 골목의 우편함과 편지' \
+  --heading-color '#28505a' --text-color '#26353a' --paper-color '#fafbf8'
+```
+
+장르 선택: `classic`, `mystery`, `fantasy`, `romance`, `horror`, `sf`, `literary`. 생략 시 `classic`. `--cover-background`, `--cover-text-color`, `--accent-color`, `--heading-color`, `--text-color`, `--paper-color`로 각 역할의 색을 바꿀 수 있다. 색은 따옴표로 감싼 `#RRGGBB` 값이다. 장식 강조색은 글자색과 구분한다. 낮은 글자 대비, 잘못된 색 형식, 없거나 손상된 표지 이미지는 오류로 처리한다.
+
+이미지는 PNG/JPEG/WebP를 지원한다. 표지 그림과 제목 영역을 분리해 글자를 읽기 쉽게 유지한다. 빌더는 명시한 로컬 이미지·폰트만 읽으며 외부 이미지를 자동 다운로드하지 않는다. 긴 제목은 그림과 글자 크기를 줄여 배치하며, 그래도 한 쪽을 넘으면 제목·부제·저자 표기를 줄이라는 오류를 반환한다. 이미지 생성 자체는 별도 도구가 담당한다. 이미지가 없으면 장르 색상의 타이포그래피 표지를 만든다. `.manifest.json`에는 적용 색과 표지 이미지 SHA-256이 함께 기록된다.
 
 ## 검증과 완료
 
@@ -39,6 +53,7 @@ PDF가 생겼다는 것과 완성됐다는 것은 다르다.
 2. `.manifest.json`의 원고 SHA-256, 장별 실제 쪽수, 총 쪽수와 생성 파일을 대조한다. 목차 링크·책갈피가 실제 장 시작을 가리키는지 확인한다.
 3. `pdffonts book.pdf` 등으로 한글 글꼴 포함 상태를 확인한다. 추출 텍스트의 대체 문자와 페이지 밖 텍스트를 검사한다.
 4. `pdftoppm -scale-to 1400 -png book.pdf preview/page` 또는 PyMuPDF로 페이지를 렌더링한다. **모든 페이지의 축소판**과 표지·목차·장 시작·본문·마지막 페이지의 확대본을 직접 확인한다. 긴 책은 묶음별로 나누어 본다.
-5. 잘린 제목·한글 네모·문단 누락·줄 겹침·고립된 제목·부자연스러운 빈 페이지를 수정하고 다시 렌더링한다. 글자만 추출하는 검사는 시각 검사를 대신하지 않는다.
+5. 표지 그림이 실제로 포함됐는지, 장르 분위기·원고의 모티프와 맞는지, 글자색 대비와 이미지 해상도가 충분한지 확인한다.
+6. 잘린 제목·한글 네모·문단 누락·줄 겹침·고립된 제목·부자연스러운 빈 페이지를 수정하고 다시 렌더링한다. 글자만 추출하는 검사는 시각 검사를 대신하지 않는다.
 
 원고 수정 후에는 PDF와 검증 기록도 갱신한다. 렌더러를 사용할 수 없으면 원고와 실행 가능한 제작 파일까지 전달하고 **PDF 제작/시각 검증 미완료**를 정확히 표시한다. 파일을 만들지 않고 다운로드 링크를 꾸미지 않는다.

@@ -16,6 +16,42 @@ import sys
 import tempfile
 
 
+# Cover background/text, decorative accent, heading, body text, paper.
+# These are starting palettes, not fixed rules about genres.
+PALETTES = {
+    "classic": ("#172028", "#f8f3e8", "#b9a374", "#655032", "#252a2f", "#ffffff"),
+    "mystery": ("#172b35", "#edf4ef", "#c8a568", "#28505a", "#26353a", "#fafbf8"),
+    "fantasy": ("#202d29", "#f6edd7", "#c4a15c", "#40543d", "#2f332b", "#fdfaf2"),
+    "romance": ("#593849", "#fff4ed", "#e4b3a4", "#794455", "#382e32", "#fffaf7"),
+    "horror": ("#211d25", "#f1e9e4", "#b76d70", "#743b47", "#30292e", "#faf7f4"),
+    "sf": ("#142637", "#e7f5ff", "#76c8d6", "#245473", "#263440", "#f7fbfe"),
+    "literary": ("#403d35", "#fff6e6", "#c4ae7b", "#61553d", "#35332e", "#fffdf7"),
+}
+COLOR_FIELDS = ("cover_background", "cover_text_color", "accent_color", "heading_color", "text_color", "paper_color")
+
+
+def contrast(first, second):
+    def luminance(color):
+        channels = [int(color[i:i + 2], 16) / 255 for i in (1, 3, 5)]
+        linear = [c / 12.92 if c <= .04045 else ((c + .055) / 1.055) ** 2.4 for c in channels]
+        return sum(c * weight for c, weight in zip(linear, (.2126, .7152, .0722)))
+    light, dark = sorted((luminance(first), luminance(second)), reverse=True)
+    return (light + .05) / (dark + .05)
+
+
+def book_design(args):
+    palette = dict(zip(COLOR_FIELDS, PALETTES[args.genre]))
+    for field in COLOR_FIELDS:
+        value = getattr(args, field) or palette[field]
+        if not re.fullmatch(r"#[0-9a-fA-F]{6}", value):
+            raise ValueError(f"--{field.replace('_', '-')} must be a #RRGGBB color")
+        palette[field] = value.lower()
+    for ink, paper in (("cover_text_color", "cover_background"), ("text_color", "paper_color"), ("heading_color", "paper_color")):
+        if contrast(palette[ink], palette[paper]) < 4.5:
+            raise ValueError(f"insufficient contrast: {ink} / {paper}; choose a ratio of at least 4.5")
+    return palette
+
+
 def inline(text):
     escaped = html.escape(text)
     escaped = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", escaped)
@@ -121,6 +157,7 @@ def build(args):
     from pypdf import PdfReader
     from weasyprint import HTML
     from weasyprint.text.fonts import FontConfiguration
+    from weasyprint.urls import URLFetcher, URLFetcherResponse
 
     source = args.manuscript.resolve()
     output = args.output.resolve()
@@ -129,6 +166,7 @@ def build(args):
         raise ValueError("output PDF and manifest must be distinct from the input manuscript")
     if output.suffix.lower() != ".pdf":
         raise ValueError("--output must have a .pdf suffix")
+    palette = book_design(args)
     for value, label in [(args.title, "title"), (args.author, "author"), (args.font_family, "font family")]:
         if not value.strip():
             raise ValueError(f"{label} must not be empty")
@@ -140,20 +178,58 @@ def build(args):
     if font_path and font_path in (output, manifest_path):
         raise ValueError("output must not overwrite the font file")
 
-    def fetch_font_only(url, **_kwargs):
-        if font_path and url == font_path.as_uri():
-            return {"string": font_path.read_bytes()}
-        raise ValueError("external resource fetching is disabled")
+    image_path = args.cover_image.resolve() if args.cover_image else None
+    image_bytes = None
+    if image_path:
+        from PIL import Image
+        if image_path in (source, output, manifest_path):
+            raise ValueError("cover image must be distinct from manuscript and output files")
+        image_bytes = image_path.read_bytes()
+        try:
+            with Image.open(BytesIO(image_bytes)) as picture:
+                if picture.format not in ("PNG", "JPEG", "WEBP"):
+                    raise ValueError("cover image must be PNG, JPEG or WebP")
+                picture.verify()
+        except (OSError, SyntaxError) as error:
+            raise ValueError("invalid cover image") from error
+    resources = {font_path.as_uri(): font_path.read_bytes()} if font_path else {}
+    if image_path:
+        resources[image_path.as_uri()] = image_bytes
+
+    class LocalAssets(URLFetcher):
+        def fetch(self, url, headers=None):
+            if url in resources:
+                return URLFetcherResponse(url, resources[url])
+            raise ValueError("external resource fetching is disabled")
 
     family = "BookLocalFont" if font_path else args.font_family
     font_css = ("@font-face { font-family: BookLocalFont; src: url("
                 + css_string(font_path.as_uri()) + "); }\n") if font_path else ""
     style = font_css + "html { font-family: " + css_string(family) + ", serif; }\n" + CSS
+    style += """
+@page { background: %(paper_color)s;
+  @bottom-center { color: %(text_color)s; }
+}
+@page cover { background: %(cover_background)s; }
+html, .credits { color: %(text_color)s; }
+h1, h2, .titlepage .subtitle, .toc a::after, .scene { color: %(heading_color)s; }
+.cover, .cover h1, .cover .subtitle { color: %(cover_text_color)s; }
+.ornament, .rule { border-color: %(accent_color)s; }
+.cover-art { display: block; width: 100%%; height: 90mm; object-fit: contain; margin: 0 auto 9mm; }
+.illustrated .cover { padding-top: 0; }
+.illustrated .cover h1 { font-size: 23pt; }
+.illustrated .cover .subtitle { margin-top: 5mm; }
+.illustrated .cover .author { margin-top: 7mm; }
+.long-title .cover-art { height: 43mm; margin-bottom: 5mm; }
+.long-title.illustrated .cover h1 { font-size: 16pt; }
+""" % palette
     title, author, subtitle = map(html.escape, (args.title, args.author, args.subtitle))
     subtitle_html = f'<p class="subtitle">{subtitle}</p>' if subtitle else ""
-    front = (f'<section class="cover"><div class="ornament"></div><h1>{title}</h1>'
+    artwork = (f'<img class="cover-art" src="{html.escape(image_path.as_uri(), quote=True)}" '
+               f'alt="{html.escape(args.cover_image_alt, quote=True)}">') if image_path else '<div class="ornament"></div>'
+    front = (f'<section class="cover">{artwork}<h1>{title}</h1>'
              f'{subtitle_html}<p class="author">{author}</p></section>'
-             f'<section class="titlepage"><h1>{title}</h1>{subtitle_html}<div class="rule"></div>'
+             f'<section class="titlepage" id="titlepage"><h1>{title}</h1>{subtitle_html}<div class="rule"></div>'
              f'<p class="credits">{author}<br>A5 · PDF 독서본</p></section>')
     if preamble:
         front += '<section class="preamble">' + "".join(preamble) + "</section>"
@@ -165,12 +241,16 @@ def build(args):
         toc += f'<a href="#{key}">{label}</a>'
         body += (f'<section class="chapter"><h2 id="{key}">{label}</h2>'
                  + "".join(chapter["blocks"]) + "</section>")
-    body_class = "long-title" if len(args.title) > 80 else ""
+    body_class = "long-title" if len(args.title) > (32 if image_path else 80) else ""
+    if image_path:
+        body_class += " illustrated"
     document = (f'<!doctype html><html lang="ko"><head><meta charset="utf-8">'
                 f'<title>{title}</title><meta name="author" content="{author}">'
                 f'<style>{style}</style></head><body class="{body_class}">{front}{toc}</nav>{body}</body></html>')
-    rendered = HTML(string=document, url_fetcher=fetch_font_only).render(font_config=FontConfiguration())
+    rendered = HTML(string=document, url_fetcher=LocalAssets(fail_on_errors=True)).render(font_config=FontConfiguration())
     anchors = {key: index + 1 for index, page in enumerate(rendered.pages) for key in page.anchors}
+    if anchors["titlepage"] != 2:
+        raise ValueError("cover exceeds one page; shorten the title, subtitle or author label")
     pdf = rendered.write_pdf()
     reader = PdfReader(BytesIO(pdf))
     chapter_pages = [{"title": chapter["title"], "pdf_page": anchors[f"chapter-{index + 1}"]}
@@ -179,7 +259,9 @@ def build(args):
         raise ValueError("PDF page count differs from layout")
     manifest = {"source_sha256": hashlib.sha256(raw).hexdigest(),
                 "page_count": len(reader.pages), "contents_pdf_page": anchors["contents"],
-                "chapters": chapter_pages, "page_numbering": "physical PDF pages, starting at 1"}
+                "chapters": chapter_pages, "page_numbering": "physical PDF pages, starting at 1",
+                "design": {"genre": args.genre, "palette": palette,
+                           "cover_image_sha256": hashlib.sha256(image_bytes).hexdigest() if image_bytes else None}}
     output.parent.mkdir(parents=True, exist_ok=True)
     # Write complete temporary files first; invalid manuscripts never touch outputs.
     for destination, data in [(output, pdf), (manifest_path, (json.dumps(manifest, ensure_ascii=False, indent=2) + "\n").encode("utf-8"))]:
@@ -203,6 +285,11 @@ def main():
     parser.add_argument("--subtitle", default="")
     parser.add_argument("--font-family", default="Noto Serif CJK KR")
     parser.add_argument("--font-file", type=Path)
+    parser.add_argument("--genre", choices=PALETTES, default="classic", help="Starting color palette; individual colors can be overridden")
+    for field in COLOR_FIELDS:
+        parser.add_argument("--" + field.replace("_", "-"), help="Override using #RRGGBB")
+    parser.add_argument("--cover-image", type=Path, help="Local PNG, JPEG or WebP illustration (optional)")
+    parser.add_argument("--cover-image-alt", default="표지 삽화")
     args = parser.parse_args()
     try:
         manifest = build(args)

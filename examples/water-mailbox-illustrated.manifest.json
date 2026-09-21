@@ -1,0 +1,32 @@
+{
+  "source_sha256": "8c21b48478b7a04c8f3a652867bc23701d4d1716fdbd7fcba310bb61dd8e0c0e",
+  "page_count": 9,
+  "contents_pdf_page": 3,
+  "chapters": [
+    {
+      "title": "1장. 돌아온 봉투",
+      "pdf_page": 4
+    },
+    {
+      "title": "2장. 문이 있던 자리",
+      "pdf_page": 6
+    },
+    {
+      "title": "3장. 새 주소",
+      "pdf_page": 8
+    }
+  ],
+  "page_numbering": "physical PDF pages, starting at 1",
+  "design": {
+    "genre": "mystery",
+    "palette": {
+      "cover_background": "#172b35",
+      "cover_text_color": "#edf4ef",
+      "accent_color": "#c8a568",
+      "heading_color": "#28505a",
+      "text_color": "#26353a",
+      "paper_color": "#fafbf8"
+    },
+    "cover_image_sha256": "b9af50dd7d579ffac39172523cb5b99bfa82c04c46172db026b61281413b75fc"
+  }
+}

@@ -41,7 +41,7 @@ python skills/novel-book-writer/scripts/build_book.py \
   --author 'AI 창작 예제' --subtitle '소설책 제작 스킬 · 짧은 시연'
 ```
 
-기본 글꼴은 Noto Serif CJK KR입니다. 다른 환경에서는 `--font-file`로 한글을 지원하는 글꼴을 지정하세요. `--help`가 옵션의 기준입니다. 기본 표지는 타이포그래피로 제작합니다. 삽화 생성이나 상업 표지 이미지는 포함하지 않습니다.
+기본 글꼴은 Noto Serif CJK KR입니다. 다른 환경에서는 `--font-file`로 한글을 지원하는 글꼴을 지정하세요. `--help`가 옵션의 기준입니다. 기본 표지는 타이포그래피로 제작합니다. `--genre`로 장르 색을 선택하고, `--cover-image`로 AI 생성 또는 사용 권한이 있는 그림을 넣을 수 있습니다. AI 생성은 사용하는 에이전트의 이미지 도구가 담당하며 PDF 빌더는 모델을 호출하지 않습니다.
 
 빌더는 제한된 Markdown 원고를 받습니다. 장 제목은 `##`, 문단은 빈 줄, 장면 전환은 `***`를 사용합니다. 수동 목차는 넣지 않습니다. 원고→PDF 도구는 원고를 대신 집필하거나 문학적 완성도를 판정하지 않습니다.
 
@@ -66,3 +66,18 @@ PDF 텍스트 검사와 실제 렌더링을 함께 수행해야 합니다. PDF�
 ## 공개 범위와 이용
 
 저장소에는 스킬, 도구, 새로 작성한 창작 예제만 포함합니다. 사용자의 비공개 원고, 타 작품 원문, 인증정보, 폰트 파일은 포함하지 않습니다. 참고 작품은 링크와 분석 메모로 기록합니다. 이용 조건은 [LICENSE](LICENSE)를 참고하세요.
+
+## 장르 색감과 AI 표지
+
+`--genre mystery|fantasy|romance|horror|sf|literary|classic`으로 시작 팔레트를 선택합니다. 표지·장 제목·본문·종이색을 역할별로 지정할 수 있으며 낮은 글자 대비를 검사합니다. 장르의 고정 규칙이 아니라 작품의 정서에 맞춰 조정할 출발점입니다.
+
+```bash
+python skills/novel-book-writer/scripts/build_book.py \
+  --manuscript examples/manuscript.md --output output/illustrated-book.pdf \
+  --title '물이 빠진 뒤의 우편함' --author 'AI 창작 예제' \
+  --genre mystery --cover-image examples/cover-coastal.png
+```
+
+`--cover-background`, `--cover-text-color`, `--accent-color`, `--heading-color`, `--text-color`, `--paper-color`는 `'#RRGGBB'`로 덮어쓸 수 있습니다. 지원 이미지는 로컬 PNG/JPEG/WebP입니다. 표지 이미지 영역과 실제 제목 글자를 분리하여 글자가 그림에 묻히지 않게 합니다.
+
+[표지 제작 지침](skills/novel-book-writer/references/cover-design.md)과 [AI 표지 제작 기록](examples/cover-design.md)을 참고하세요. 이미지 생성 기능은 에이전트 환경에 따라 달라지며 별도 제공업체 이용 조건이 적용될 수 있습니다. 본문 삽화는 현재 CLI가 지원하지 않습니다.

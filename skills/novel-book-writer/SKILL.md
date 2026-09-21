@@ -1,6 +1,6 @@
 ---
 name: novel-book-writer
-description: Use when helping users choose a novel premise or formulate a writing request, creating or revising a Korean novel, expanding thin scenes into readable fiction, adapting a TRPG story, or producing a novel book PDF with a cover and contents. 소설 창작, 장르 참고, 가독성 교정, 이해하기 어려운 줄거리 개선, 소설 표지 디자인과 소설책 제작에 사용한다.
+description: Use when helping users choose a novel premise or formulate a writing request, creating or revising a Korean novel, expanding thin scenes into readable fiction, adapting a TRPG story, or producing a novel book PDF with a cover and contents. 소설 창작, 장르 참고, 가독성 교정, 이해하기 어려운 도입·다수 인물·급작스러운 전개·게임 로그 같은 줄거리 개선, 소설 표지 디자인과 소설책 제작에 사용한다.
 ---
 
 # 소설에서 한 권의 책까지
@@ -23,9 +23,9 @@ description: Use when helping users choose a novel premise or formulate a writin
 ## 작업 순서
 
 1. **장르 참고** — [research.md](references/research.md)를 읽고 같은 장르 자료를 직접 열어 비교한다. `research.md`에 출처·읽은 범위·기법·우리 작품의 새 구현을 적는다. 이는 참고 분석이며 모델 재학습이 아니다. 접근하지 못한 원문을 읽었다고 쓰지 않는다.
-2. **상상력과 설계** — [fiction-craft.md](references/fiction-craft.md)를 읽는다. 서로 다른 발상 후보를 짧게 비교해 하나를 선택하고, 욕망·갈등·세계의 제약·결말을 비유 없는 짧은 줄거리로 연결한다. 주요 선택마다 독자가 먼저 알아야 할 사실과 본문에서 전달할 자리를 정한다. `story-bible.md`와 `outline.md`에 연표·지식·복선·장별 변화를 남긴다. TRPG 각색일 때만 [adaptation.md](references/adaptation.md)를 추가로 읽는다.
-3. **실제 집필** — 장별 목표·행동·관계 변화가 있는 본문을 `manuscript.md`에 쓴다. 중요한 선택은 대화와 행동이 벌어지는 장면으로 펼치고 이동·반복은 요약한다. 독자가 상상할 구체성을 보강하되 모든 문장을 묘사로 채우지 않는다.
-4. **개정** — [revision.md](references/revision.md)에 따라 구조·장면·문장을 순차 교정한다. `revision-notes.md`에 문제 문장/장면, 수정, 확인 근거를 기록한다. 설정집을 주지 않은 본문 단독 검사에서 답·본문 근거·불명인 부분을 기록한다. 중요한 선택의 이유나 해결 조건이 불명하면 본문을 고친 뒤 다시 검사한다. 점수나 문자 수만으로 문학적 완성도를 인증하지 않는다.
+2. **상상력과 설계** — [fiction-craft.md](references/fiction-craft.md)를 읽는다. 서로 다른 발상 후보를 짧게 비교해 하나를 선택하고, 욕망·갈등·세계의 제약·결말을 비유 없는 짧은 줄거리로 연결한다. 도입의 상황 단서, 인물의 소개 순서, 주요 선택 전에 필요한 사실과 전달할 자리를 정한다. `story-bible.md`와 `outline.md`에 연표·지식·복선·장별 변화를 남긴다. TRPG 각색일 때만 [adaptation.md](references/adaptation.md)를 추가로 읽는다.
+3. **실제 집필** — 장별 목표·행동·관계 변화가 있는 본문을 `manuscript.md`에 쓴다. 첫 장면에서 시점·처지·당장 목적을 짚게 하고, 새 인물은 역할과 관계를 행동 속에서 소개한다. 중요한 발견 뒤의 해석·반응·선택을 다음 장면에 연결하고 단순 이동·반복은 요약한다. 독자가 상상할 구체성을 보강하되 모든 문장을 묘사로 채우지 않는다.
+4. **개정** — [revision.md](references/revision.md)에 따라 구조·장면·문장을 순차 교정한다. `revision-notes.md`에 문제 문장/장면, 수정, 확인 근거를 기록한다. 첫 장면만 읽는 도입 검사와 인물 소개·장면 전환 검사를 한 뒤, 설정집을 주지 않은 본문 단독 검사에서 답·본문 근거·불명인 부분을 기록한다. 중요한 선택의 이유나 해결 조건이 불명하면 본문을 고친 뒤 다시 검사한다. 점수나 문자 수만으로 문학적 완성도를 인증하지 않는다.
 5. **책 제작** — 원고의 인과관계·결말·누락 검토를 마친 뒤 [book-production.md](references/book-production.md)를 읽고 PDF를 만든다. [cover-design.md](references/cover-design.md)에 따라 장르·정서에 맞는 표지와 글자 색을 선택하고, 몰입에 도움이 되거나 요청된 경우 AI 삽화를 생성해 사용한다. 표지, 속표지, 자동 목차, 본문, 요청된 후일담 순서다. 조사·검토 메모는 본문 밖에 둔다.
 6. **전달** — 원고, PDF, 실제 읽은 참고 목록, 검토 기록을 전달한다. 미검증 항목과 사람 독자 평가 여부를 구분한다. GitHub·외부 출판은 그 작업에 대한 사용자 요청이 있을 때만 수행한다.
 

@@ -1,6 +1,6 @@
 interface:
   display_name: "소설책 제작"
-  short_description: "소재·요청문 상담부터 소설 집필·이해도 검토·표지·PDF까지"
-  default_prompt: "$novel-book-writer로 비슷한 장르 작품의 기법을 참고해 독창적인 소설을 쓰고 본문만으로 사건과 인물의 선택을 이해할 수 있는지 검토한 뒤 표지와 목차가 있는 PDF 책으로 만들어 주세요."
+  short_description: "소설·오른쪽 전면 삽화·일관된 캐릭터·웹툰·만화책 제작"
+  default_prompt: "$novel-book-writer로 요청한 형식의 이야기를 제작해 주세요. 삽화 소설은 같은 캐릭터 기준을 공유하고 장면 그림을 오른쪽 독립 한 페이지로 배치하며, 본문·그림·목차·최종 렌더링을 검수해 주세요. 웹툰이나 만화 요청이면 패널 대본과 해당 형식으로 각색해 주세요."
 policy:
   allow_implicit_invocation: true

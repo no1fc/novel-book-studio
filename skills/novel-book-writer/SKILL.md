@@ -1,11 +1,19 @@
 ---
 name: novel-book-writer
-description: Use when helping users choose a novel premise or formulate a writing request, creating or revising a Korean novel, expanding thin scenes into readable fiction, adapting a TRPG story, or producing a novel book PDF with a cover and contents. 소설 창작, 장르 참고, 가독성 교정, 이해하기 어려운 도입·다수 인물·급작스러운 전개·게임 로그 같은 줄거리 개선, 소설 표지 디자인과 소설책 제작에 사용한다.
+description: Use when planning, writing, revising or typesetting Korean novels, anime-style illustrated novels, webtoons or comic books, especially when full-page scene art, consistent characters or multi-volume continuity are requested. 소설 창작·교정, 오른쪽 전면 삽화, 캐릭터 일관성, 웹툰·만화책, TRPG 각색과 책 PDF 제작에 사용한다.
 ---
 
 # 소설에서 한 권의 책까지
 
 독자가 장소를 상상하고, 인물의 선택을 이해하며, 다음 장을 읽고 싶어지는 **독창적인 완결 소설**을 만든다. 창작 요청은 원고 완성 후 표지·목차·본문 PDF까지 이어간다. 사용자가 시범 장면·개정만 요청하면 그 범위만 수행한다. 스킬 설치 자체는 기존 소설 전체 개작이나 공개의 허가가 아니다.
+
+## 결과물 형식과 공통 캐릭터
+
+- 일반 소설은 기존 집필·책 제작 흐름을 따른다.
+- **애니메이션풍 삽화 소설**은 정지 그림이 포함된 소설이다. [production-loop.md](references/production-loop.md)를 읽고, 선택한 장면을 **오른쪽 독립 한 페이지 전체**에 배치한다. 맞은편 왼쪽 본문에 그 장면이 있어야 한다. 본문 하단 그림은 사용자가 그 방식을 명시했을 때만 구형 도구로 처리한다. 그림이 없는 쪽은 정상 본문으로 흐른다.
+- **웹툰·만화**는 [visual-formats.md](references/visual-formats.md)를 읽고 원고를 패널 대본으로 각색한다. 웹툰은 세로 스크롤, 만화는 페이지·읽기 순서·말풍선을 설계한다. 소설 삽화를 그대로 줄 세운 결과를 각색 완료라고 하지 않는다. 실제 영상·음성·움직임 제작은 이 도구의 범위가 아니다.
+- 두 장면 이상에 같은 인물이 나오면 [character-consistency.md](references/character-consistency.md)를 읽는다. 모든 권과 파생 형식이 같은 `character-bible.json`과 기준 그림을 참조한다. 고정 외양과 장면별 의상·장비·부상을 구분한다.
+- 실행 가능한 계획 형식과 재개 명령은 [visual-plan.md](references/visual-plan.md)에 있다. `scripts/story_project.py init`은 골격만 만들며 원고나 그림을 제작했다고 표시하지 않는다.
 
 ## 무엇을 요청할지 모를 때
 
@@ -21,6 +29,10 @@ description: Use when helping users choose a novel premise or formulate a writin
 - 기존 원고: 원본 보존, 별도 개정본. 사건을 고정할지 재구성할지는 사용자 요청에 따른다.
 
 ## 작업 순서
+
+문학적 완성도 개선이나 ‘소설 같지 않다’는 피드백에는 집필·개정 전에 [literary-loop.md](references/literary-loop.md)를 읽는다. 실제 장면의 문제와 살릴 강점을 정하고, 개정으로 잃을 수 있는 효과까지 비교한다. 장편의 서술 방향을 처음 정할 때도 적용하며, 짧은 수정에는 별도 문서 없이 필요한 판단만 사용한다.
+
+사용자가 제작 순서를 지정하면 보존한다. 그림이 있는 작품은 짧은 브리프 뒤 캐릭터 기준을 잠그고 표지·장면 그림에 공유한다. 이후 원고의 장면 앵커와 실제 조판 결과를 대조한다. 아래 기본 순서는 사용자 지정 순서가 없을 때 따른다.
 
 1. **장르 참고** — [research.md](references/research.md)를 읽고 같은 장르 자료를 직접 열어 비교한다. `research.md`에 출처·읽은 범위·기법·우리 작품의 새 구현을 적는다. 이는 참고 분석이며 모델 재학습이 아니다. 접근하지 못한 원문을 읽었다고 쓰지 않는다.
 2. **상상력과 설계** — [fiction-craft.md](references/fiction-craft.md)를 읽는다. 서로 다른 발상 후보를 짧게 비교해 하나를 선택하고, 욕망·갈등·세계의 제약·결말을 비유 없는 짧은 줄거리로 연결한다. 도입의 상황 단서, 인물의 소개 순서, 주요 선택 전에 필요한 사실과 전달할 자리를 정한다. `story-bible.md`와 `outline.md`에 연표·지식·복선·장별 변화를 남긴다. TRPG 각색일 때만 [adaptation.md](references/adaptation.md)를 추가로 읽는다.

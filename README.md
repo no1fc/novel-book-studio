@@ -3,6 +3,45 @@
 
 **Novel Book Studio · 소설책 제작 스킬**
 
+애니메이션풍 삽화 소설, 세로 웹툰, 만화 PDF/CBZ를 지원합니다. 삽화 소설의 장면 그림은 **왼쪽 본문과 마주 보는 오른쪽 독립 한 페이지**를 사용합니다. 모든 권과 파생 형식은 하나의 캐릭터 기준을 공유합니다. 실제 애니메이션 영상 생성 기능은 포함하지 않습니다.
+
+## 전면 삽화와 캐릭터 일관성
+
+`character-bible.json`은 화풍·고정 외양·복장·기준 그림의 공통 원장입니다. 각 권/각색본의 `production.json`은 원고, 장면 발췌, 화면에 나오는 인물의 현재 상태, 프롬프트, 그림, 검수 기록을 연결합니다. 원고·기준·상태·그림이 바뀌면 오래된 검수로 최종 출력할 수 없습니다. 해시 검사는 얼굴 일치나 그림의 의미를 자동 판정하지 않으므로 실제 이미지를 보며 검수해야 합니다.
+
+```bash
+python skills/novel-book-writer/scripts/story_project.py init \
+  --project output/my-story --title '새 이야기' --parts 3 --format illustrated-novel
+python skills/novel-book-writer/scripts/story_project.py status --project output/my-story
+```
+
+생성 결과는 제작 골격이며 원고나 그림이 완성된 상태가 아닙니다. 실제 원고 문단 사이에 `[[art:scene-id]]`를 넣고 계획 파일을 작성합니다. `--visual-plan`을 지정한 빌더는 삽화 쪽·목차·링크를 함께 조판합니다. `--allow-pending-art`는 위치 점검 초안이며, 최종 출력에서는 오른쪽 삽화의 맞은편에 실제 장면 발췌가 있어야 합니다. 빈 왼쪽 쪽이나 엉뚱한 장면은 거부하므로 초안에서 앵커 위치를 조정합니다.
+
+```bash
+python skills/novel-book-writer/scripts/build_book.py \
+  --manuscript output/my-story/volumes/part-01/manuscript.md \
+  --visual-plan output/my-story/volumes/part-01/production.json \
+  --output output/my-story/output/part-01.pdf --title '새 이야기 1부' --author 'AI 창작'
+```
+
+PDF는 표지=1쪽, 왼쪽 짝수/오른쪽 홀수 기준입니다. 뷰어에서 두 페이지 보기와 표지 단독 표시를 켭니다. 원고를 다시 조판하므로 실제 쪽수와 목차도 갱신됩니다. 하단 삽화는 기존 작업의 명시적 호환 옵션으로만 유지합니다.
+
+## 웹툰·만화 제작
+
+원고를 패널 대본으로 각색하고 같은 캐릭터 원장을 참조합니다. 검수된 패널과 별도 한글 말풍선을 `build_visual.py`로 합성합니다. `format: webtoon`은 스크롤 HTML/PNG, `format: comic`은 A5 PDF/150dpi PNG/CBZ를 만듭니다. 웹툰은 패널 사이에서만 구간을 나누며, 만화는 LTR/RTL과 패널 좌표를 명시합니다. 기존 출력 폴더는 덮지 않습니다.
+
+```bash
+python skills/novel-book-writer/scripts/build_visual.py \
+  --plan /path/to/adaptation/production.json --output /path/to/output/webtoon-v1
+```
+
+현재 말풍선은 둥근 사각형이며 자동 꼬리·손글씨 효과음·영상 애니메이션은 지원하지 않습니다. 최종 구도와 읽기 순서는 사람이거나 이미지 보는 에이전트가 확인해야 합니다. 인쇄소 납품 규격과 플랫폼 업로드 규격은 별도입니다.
+
+- [실행 JSON·명령](skills/novel-book-writer/references/visual-plan.md)
+- [캐릭터 기준과 생성·검수](skills/novel-book-writer/references/character-consistency.md)
+- [오른쪽 전면 삽화 제작](skills/novel-book-writer/references/production-loop.md)
+- [웹툰·만화 각색](skills/novel-book-writer/references/visual-formats.md)
+
 비슷한 장르 작품의 기법을 참고해 독창적인 한국어 소설을 쓰고, 인물의 선택과 사건의 인과관계를 검토하고 가독성을 교정한 뒤 표지·목차·본문이 있는 PDF 책으로 제작하는 재사용 스킬입니다.
 
 **장르 참고 → 이야기 설계 → 장별 집필 → 본문 단독 이해도 검사 → 가독성 교정 → 표지 디자인·PDF 검증**을 다룹니다. 기존 TRPG 각색 지침을 일반 소설에도 적용할 수 있게 발전시켰습니다. '학습'은 실제 열람 자료를 분석하는 과정이며 모델 훈련이 아닙니다.
@@ -100,6 +139,6 @@ python skills/novel-book-writer/scripts/build_book.py \
   --genre mystery --cover-image examples/cover-coastal.png
 ```
 
-`--cover-background`, `--cover-text-color`, `--accent-color`, `--heading-color`, `--text-color`, `--paper-color`는 `'#RRGGBB'`로 덮어쓸 수 있습니다. 지원 이미지는 로컬 PNG/JPEG/WebP입니다. `--cover-layout auto|fullbleed|framed|typographic`으로 구도를 고릅니다. 기본값 `auto`는 이미지가 있으면 전면 삽화, 없으면 타이포그래피입니다. 전면 삽화의 제목은 `--cover-title-position top|bottom`으로 배치하며 대비를 확보한 패널 위에 실제 글자로 조판합니다. `--cover-title-lines '물이 빠진 뒤의|우편함'`처럼 최대 4행으로 나눌 수 있습니다. 실제 표지를 크게·작게 렌더링해 제목과 그림의 관계를 확인해야 합니다.
+`--cover-background`, `--cover-text-color`, `--accent-color`, `--heading-color`, `--text-color`, `--paper-color`는 `'#RRGGBB'`로 덮어쓸 수 있습니다. 지원 이미지는 로컬 PNG/JPEG/WebP입니다. `--cover-layout auto|fullbleed|framed|typographic`으로 구도를 고릅니다. 기본값 `auto`는 이미지가 있으면 전면 삽화, 없으면 타이포그래피입니다. 전면 삽화의 제목은 `--cover-title-position top|center|bottom`으로 실제 글자로 배치합니다. 기본값은 그림 위 직접 조판이며 패널 배경은 `--cover-text-treatment panel`로 선택합니다. `--cover-title-lines '물이 빠진 뒤의|우편함'`처럼 최대 4행으로 나눌 수 있습니다. 실제 표지를 크게·작게 렌더링해 제목과 그림의 관계를 확인해야 합니다.
 
-[표지 제작 지침](skills/novel-book-writer/references/cover-design.md)과 [AI 표지 제작 기록](examples/cover-design.md)을 참고하세요. 이미지 생성 기능은 에이전트 환경에 따라 달라지며 별도 제공업체 이용 조건이 적용될 수 있습니다. 본문 삽화는 현재 CLI가 지원하지 않습니다.
+[표지 제작 지침](skills/novel-book-writer/references/cover-design.md)과 [AI 표지 제작 기록](examples/cover-design.md)을 참고하세요. 이미지 생성은 에이전트의 실제 이미지 도구가 담당하며 이 CLI는 모델을 호출하지 않습니다. 검증용 단색 이미지를 완성 삽화로 납품하지 않습니다.

@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Typeset a bounded UTF-8 novel manuscript as an A5 PDF and audit manifest.
+"""Typeset a bounded UTF-8 novel manuscript as a reading PDF (A5 by default) and audit manifest.
 
 Supported Markdown: one optional leading # title, ## sections, blank-line
 paragraphs, *** scene breaks, and inline *emphasis* / **strong**. All ##
-sections are included, in source order. Other Markdown is rejected explicitly.
+sections are included, in source order. [[art:id]] lines are accepted only with
+--visual-plan or --text-only. Other Markdown is rejected explicitly.
 """
 import argparse
 import hashlib
@@ -27,6 +28,8 @@ PALETTES = {
     "sf": ("#142637", "#e7f5ff", "#76c8d6", "#245473", "#263440", "#f7fbfe"),
     "literary": ("#403d35", "#fff6e6", "#c4ae7b", "#61553d", "#35332e", "#fffdf7"),
 }
+PAGE_SIZES = {"a5": (148, 210), "b6": (128, 182), "sinkook": (152, 225), "a4": (210, 297)}  # mm
+PAGE_LABELS = {"a5": "A5", "b6": "B6", "sinkook": "신국판", "a4": "A4"}
 COLOR_FIELDS = ("cover_background", "cover_text_color", "accent_color", "heading_color", "text_color", "paper_color")
 
 
@@ -59,15 +62,21 @@ def inline(text):
     return escaped.replace("\n", "<br>")
 
 
+def keep_words(text):
+    """Korean titles break between words, not inside them; very long tokens may still wrap."""
+    return " ".join(f'<span class="word">{html.escape(word)}</span>' if len(word) <= 10 else html.escape(word)
+                    for word in text.split())
+
+
 def cover_title(args):
     if args.cover_title_lines is None:
-        return html.escape(args.title), None
+        return keep_words(args.title), None
     lines = [line.strip() for line in args.cover_title_lines.split("|")]
     if not 1 <= len(lines) <= 4 or not all(lines):
         raise ValueError("--cover-title-lines needs 1 to 4 nonempty lines separated by |")
     if re.sub(r"\s+", "", "".join(lines)) != re.sub(r"\s+", "", args.title):
         raise ValueError("--cover-title-lines must match --title, ignoring whitespace")
-    return "<br>".join(map(html.escape, lines)), lines
+    return "<br>".join(map(keep_words, lines)), lines
 
 
 def cover_panel(palette):
@@ -150,6 +159,7 @@ h1 { font-size: 25pt; bookmark-level: none; }
 h2 { font-size: 18pt; margin-bottom: 10mm; bookmark-level: 1; }
 p { margin: 0 0 1mm; text-indent: 1em; orphans: 3; widows: 3; }
 strong { font-weight: bold; }
+.word { white-space: nowrap; }
 .cover { page: cover; break-after: page; color: #f8f3e8; text-align: center; padding-top: 18mm; }
 .cover h1 { bookmark-level: 1; bookmark-label: "표지"; break-inside: auto; }
 .ornament { width: 27mm; height: 27mm; border: 0.6pt solid #b9a374;
@@ -206,6 +216,18 @@ def build(args):
         raise ValueError("--cover-layout typographic is image-free; remove --cover-image")
     if args.cover_title_position != "top" and layout != "fullbleed":
         raise ValueError("--cover-title-position requires the fullbleed layout")
+    if args.cover_style != "classic" and layout != "typographic":
+        raise ValueError("--cover-style applies to the image-free typographic cover only")
+    if args.cover_style == "band" and contrast(palette["cover_background"], palette["accent_color"]) < 4.5:
+        raise ValueError("--cover-style band prints the title on the accent color; "
+                         "choose an accent with a contrast of at least 4.5 against the cover background")
+    if not (9 <= args.font_size_pt <= 14 and 1.4 <= args.line_height <= 2.2):
+        raise ValueError("--font-size-pt must be 9-14 and --line-height 1.4-2.2")
+    if args.page_art_height_mm and (args.page_size != "a5" or args.running_head):
+        raise ValueError("legacy bottom-page art supports only A5 without running heads")
+    page_w, page_h = PAGE_SIZES[args.page_size]
+    scale = page_w / 148
+    inner, outer = round(20 * scale, 1), round(15 * scale, 1)
     if not 0 <= args.page_art_height_mm <= 80:
         raise ValueError("--page-art-height-mm must be between 0 and 80")
     if args.visual_plan and args.page_art_height_mm:
@@ -213,7 +235,12 @@ def build(args):
     if args.allow_pending_art and not args.visual_plan:
         raise ValueError("--allow-pending-art requires --visual-plan")
     raw = source.read_bytes()
-    preamble, chapters = parse_manuscript(raw.decode("utf-8-sig"), bool(args.visual_plan))
+    if args.text_only and (args.visual_plan or args.page_art_height_mm):
+        raise ValueError("--text-only builds a reading copy without art; drop --visual-plan and page art")
+    preamble, chapters = parse_manuscript(raw.decode("utf-8-sig"), bool(args.visual_plan) or args.text_only)
+    if args.text_only:
+        for chapter in chapters:
+            chapter["blocks"] = [block for block in chapter["blocks"] if not block.startswith("ART:")]
     if args.page_art_height_mm and preamble:
         raise ValueError("page art requires all prose under ## headings; move preamble into a named section")
     font_path = args.font_file.resolve() if args.font_file else None
@@ -325,6 +352,42 @@ h1, h2, .titlepage .subtitle, .toc a::after, .scene { color: %(heading_color)s; 
 .long-title.framed .cover h1 { font-size: 16pt; }
 .long-title.fullbleed .cover h1 { font-size: 22pt; }
 """ % palette
+    style += f"""
+@page {{ size: {page_w}mm {page_h}mm; margin: {round(18 * scale, 1)}mm {outer}mm {round(20 * scale, 1)}mm {inner}mm; }}
+@page:left {{ margin-left: {outer}mm; margin-right: {inner}mm; }}
+@page:right {{ margin-left: {inner}mm; margin-right: {outer}mm; }}
+html {{ font-size: {args.font_size_pt}pt; }}
+body {{ line-height: {args.line_height}; }}
+.fullbleed .cover {{ min-height: {page_h}mm; }}
+"""
+    accent, ground = palette["accent_color"], palette["cover_background"]
+    if args.cover_style == "frame":
+        style += (f"@page cover {{ margin: 11mm; }}\n.typographic .cover {{ box-sizing: border-box; "
+                  f"min-height: {page_h - 23}mm; border: 2.6pt double {accent}; padding: {round(page_h * .24)}mm 10mm 0; }}\n")
+    elif args.cover_style == "band":
+        style += (f"@page cover {{ margin: 0; }}\n.typographic .cover {{ box-sizing: border-box; min-height: {page_h}mm; "
+                  "padding: 0; display: flex; flex-direction: column; justify-content: center; text-align: left; }\n"
+                  ".typographic .ornament { display: none; }\n"
+                  f".typographic .cover h1 {{ background: {accent}; color: {ground}; padding: 13mm 16mm; }}\n"
+                  ".typographic .cover .subtitle, .typographic .cover .author { padding: 0 16mm; }\n")
+    elif args.cover_style == "minimal":
+        style += (f".typographic .cover {{ box-sizing: border-box; min-height: {page_h - 46}mm; padding: 0; "
+                  "display: flex; flex-direction: column; justify-content: space-between; text-align: left; }\n"
+                  ".typographic .ornament { width: 100%; margin: 0; }\n"
+                  ".typographic .cover h1 { font-size: 34pt; line-height: 1.3; }\n")
+    if args.chapter_opener != "plain":
+        centered = args.chapter_opener == "centered"
+        style += (".chapter h2 { margin-bottom: 0; " + ("text-align: center; padding-top: 26mm; " if centered else "") + "}\n"
+                  f".chapter h2::after {{ content: ''; display: block; width: 14mm; border-top: 0.7pt solid {accent}; "
+                  f"margin: 5mm {'auto' if centered else '0'} 10mm; }}\n")
+    if args.running_head:
+        # first-except leaves the chapter's opening page clean.
+        head = "font-size: 7.5pt; color: %s; vertical-align: bottom; padding-bottom: 4mm;" % palette["heading_color"]
+        book = css_string(args.title if len(args.title) <= 40 else "")
+        style += (f".chapter h2 {{ string-set: chapter content(), book {book}; }}\n"
+                  f"@page body:left {{ @top-center {{ content: string(book, first-except); {head} }} }}\n"
+                  f"@page body:right {{ @top-center {{ content: string(chapter, first-except); {head} }} }}\n"
+                  ".chapter { page: body; }\n")
     if layout == "fullbleed":
         style += ("@page cover { margin: 0; background-image: url(" + css_string(image_path.as_uri())
                   + "); background-size: cover; background-position: center; }\n")
@@ -337,15 +400,15 @@ h1, h2, .titlepage .subtitle, .toc a::after, .scene { color: %(heading_color)s; 
                   "@bottom-center { vertical-align: bottom; padding-bottom: 8mm; } }\n.chapter { page: story; }\n")
     if visual_plan:
         style += """
-@page illustration { size: A5; margin: 0; background: #ffffff;
-  @bottom-center { content: none; }
+@page illustration { size: %(w)smm %(h)smm; margin: 0; background: #ffffff;
+  @bottom-center { content: none; } @top-center { content: none; }
 }
-@page:blank { @bottom-center { content: none; } }
+@page:blank { @bottom-center { content: none; } @top-center { content: none; } }
 .full-page-art { page: illustration; break-before: right; break-after: page;
-  width: 148mm; height: 210mm; margin: 0; padding: 0; line-height: 0; font-size: 0; }
-.full-page-art img { display: block; width: 148mm; height: 210mm; object-fit: cover; }
+  width: %(w)smm; height: %(h)smm; margin: 0; padding: 0; line-height: 0; font-size: 0; }
+.full-page-art img { display: block; width: %(w)smm; height: %(h)smm; object-fit: cover; }
 .full-page-art p { font-size: 15pt; line-height: 1.6; padding: 25mm; text-indent: 0; }
-"""
+""" % {"w": page_w, "h": page_h}
     title, author, subtitle = map(html.escape, (args.title, args.author, args.subtitle))
     subtitle_html = f'<p class="subtitle">{subtitle}</p>' if subtitle else ""
     artwork = (f'<div class="art-frame"><img class="cover-art" src="{html.escape(image_path.as_uri(), quote=True)}" '
@@ -353,8 +416,8 @@ h1, h2, .titlepage .subtitle, .toc a::after, .scene { color: %(heading_color)s; 
                    '<div class="ornament"></div>' if layout == "typographic" else "")
     front = (f'<section class="cover">{artwork}<div class="cover-copy"><h1>{cover_heading}</h1>'
              f'{subtitle_html}<p class="author">{author}</p></div></section>'
-             f'<section class="titlepage" id="titlepage"><h1>{title}</h1>{subtitle_html}<div class="rule"></div>'
-             f'<p class="credits">{author}<br>A5 · PDF 독서본</p></section>')
+             f'<section class="titlepage" id="titlepage"><h1>{keep_words(args.title)}</h1>{subtitle_html}<div class="rule"></div>'
+             f'<p class="credits">{author}<br>{PAGE_LABELS[args.page_size]} · PDF 독서본</p></section>')
     if preamble:
         front += '<section class="preamble">' + "".join(preamble) + "</section>"
     toc = '<nav class="toc"><h2 id="contents">차례</h2>'
@@ -418,12 +481,16 @@ h1, h2, .titlepage .subtitle, .toc a::after, .scene { color: %(heading_color)s; 
                 "page_art_height_mm": args.page_art_height_mm,
                 "illustrations": illustrations,
                 "visual_complete": bool(visual_plan) and not args.allow_pending_art,
-                "visual_warnings": visual_warnings,
+                "visual_warnings": visual_warnings, "art_anchors_skipped": args.text_only,
                 "visual_plan_sha256": hashlib.sha256(args.visual_plan.read_bytes()).hexdigest() if visual_plan else None,
                 "source_path": str(source),
                 "pdf_sha256": hashlib.sha256(pdf).hexdigest(),
                 "chapters": chapter_pages, "page_numbering": "physical PDF pages, starting at 1",
                 "design": {"genre": args.genre, "palette": palette,
+                           "page_size": {"name": args.page_size, "width_mm": page_w, "height_mm": page_h},
+                           "font_size_pt": args.font_size_pt, "line_height": args.line_height,
+                           "cover_style": args.cover_style, "chapter_opener": args.chapter_opener,
+                           "running_head": args.running_head,
                            "cover_layout": layout, "cover_title_position": args.cover_title_position,
                            "cover_title_lines": title_lines,
                            "cover_text_treatment": args.cover_text_treatment,
@@ -468,6 +535,16 @@ def main():
                         help="Legacy opt-in: reserve 0-80mm below prose; not for illustrated novels")
     parser.add_argument("--visual-plan", type=Path, help="Reviewed illustrated-novel plan for full right-hand art pages")
     parser.add_argument("--allow-pending-art", action="store_true", help="Layout draft only; marks visual_complete false")
+    parser.add_argument("--text-only", action="store_true",
+                        help="Reading copy while art is pending: skip [[art:id]] anchors, no illustration pages; not with --visual-plan")
+    parser.add_argument("--cover-style", choices=("classic", "frame", "band", "minimal"), default="classic",
+                        help="Composition of the image-free typographic cover")
+    parser.add_argument("--page-size", choices=PAGE_SIZES, default="a5", help="sinkook is 152x225mm")
+    parser.add_argument("--font-size-pt", type=float, default=11, help="Body size, 9-14")
+    parser.add_argument("--line-height", type=float, default=1.75, help="Body leading, 1.4-2.2")
+    parser.add_argument("--chapter-opener", choices=("plain", "rule", "centered"), default="plain")
+    parser.add_argument("--running-head", action="store_true",
+                        help="Book title on left pages, chapter title on right pages")
     parser.add_argument("--cover-title-lines", help="Optional 1-4 title lines separated by |; must match --title")
     args = parser.parse_args()
     try:

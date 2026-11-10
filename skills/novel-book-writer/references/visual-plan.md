@@ -1,17 +1,20 @@
 # 실행 계획 JSON과 명령
 
+스크립트는 필요한 라이브러리가 설치된 파이썬으로 실행한다. 작업 폴더에 `.venv`가 있으면 그 파이썬을 쓰고, `python`이 없으면 `python3`를 쓴다. 해시는 `sha256sum 파일`로 계산한다.
+
 경로는 해당 JSON 파일의 위치를 기준으로 해석한다. `source.path`는 현재 원고 또는 패널 대본, `bible.path`는 공통 캐릭터 원장이다. 원고·원장·기준 그림의 해시는 실제 파일 바이트의 SHA-256이다. 해시를 업데이트하는 행위는 검수 통과가 아니다.
 
 ## 프로젝트 생성 및 재개
 
-아래 명령의 `scripts/`는 설치된 스킬 폴더 기준이다. 실행 환경에 WeasyPrint 70.0, pypdf, PyMuPDF, Pillow, 한글 글꼴이 필요하다. 저장소 `requirements.txt`를 우선 사용한다.
+아래 명령의 `scripts/`는 설치된 스킬 폴더 기준이다. 실행 환경에 WeasyPrint 70.0, pypdf, PyMuPDF, Pillow, 한글 글꼴이 필요하다. 저장소 `requirements.txt`를 우선 사용한다. `render_art.py`만 추가로 Chromium 계열 브라우저를 쓴다.
 
 ```bash
 python scripts/story_project.py init --project /path/to/book --title '작품 제목' --parts 3 --format illustrated-novel
 python scripts/story_project.py status --project /path/to/book
+python scripts/story_project.py count --manuscript /path/to/manuscript.md
 ```
 
-`init`은 존재하는 프로젝트를 덮지 않는다. 생성된 원고에는 제목만 있고 기준 인물/그림/장면은 아직 없다. `status`는 검수 상태를 진단할 뿐 작품 완결이나 최종 시각 검수 완료를 선언하지 않는다. `progress.md`를 매 집필·개정·그림 제작 단계 후 갱신한다.
+`--format`은 `novel`(그림 계획이 없는 글 전용), `illustrated-novel`, `webtoon`, `comic`이다. `init`은 존재하는 프로젝트를 덮지 않는다. 생성된 원고에는 제목만 있고 기준 인물/그림/장면은 아직 없다. `status`는 권별 실제 분량(장별 공백 포함 문자 수), 그림 검수 상태, 아직 없는 그림 파일(`missing_art`)을 보여 줄 뿐 작품 완결이나 최종 시각 검수 완료를 선언하지 않는다. `count`는 프로젝트 밖의 원고 한 파일을 같은 기준으로 센다. 원장과 `progress.md`의 갱신은 [continuity.md](continuity.md)를 따른다.
 
 ## 공통 character-bible.json
 
@@ -42,7 +45,7 @@ python scripts/story_project.py status --project /path/to/book
 
 ## 권별 production.json
 
-아래는 실행 계약을 보여 주는 예다. 이미지와 원고를 실제 작성하고 해시를 채워야 실행된다. 원장과 계획에서 `style`/`characters`를 중복하지 않는다. 단편 독립 계획에 한해 `bible` 대신 인라인 `style`/`characters`를 사용할 수 있다.
+아래는 실행 계약을 보여 주는 예다. 원고를 실제로 쓰고 해시를 채워야 실행된다. 그림 파일은 배치 초안(`--allow-pending-art`)과 요청서(`export-prompts`) 단계에서는 없어도 되고, 검수와 최종 조판에서는 모두 있어야 한다. 원장과 계획에서 `style`/`characters`를 중복하지 않는다. 단편 독립 계획에 한해 `bible` 대신 인라인 `style`/`characters`를 사용할 수 있다. 단편은 `story_project.py init` 없이 원고 옆에 `production.json` 하나만 두어도 된다.
 
 ```json
 {
@@ -73,6 +76,13 @@ python scripts/story_project.py status --project /path/to/book
 
 ```bash
 python scripts/build_book.py --manuscript /path/to/book/volumes/part-01/manuscript.md --output /path/to/book/output/part-01-draft.pdf --title '작품 제목 1부' --author 'AI 창작' --visual-plan /path/to/book/volumes/part-01/production.json --allow-pending-art
+
+# 그림 마련: 코드로 그린 SVG를 PNG로 만들거나, 외부 제작용 요청서를 내보낸다.
+python scripts/render_art.py --svg /path/to/book/art/scenes/p1-bridge-v1.svg --output /path/to/book/art/scenes/p1-bridge-v1.png --size a5
+python scripts/visual_assets.py export-prompts --plan /path/to/book/volumes/part-01/production.json --output /path/to/book/art-requests.md
+
+# 그림을 기다리는 동안의 삽화 없는 독서본(앵커를 건너뛴다).
+python scripts/build_book.py --manuscript /path/to/book/volumes/part-01/manuscript.md --output /path/to/book/output/part-01-text.pdf --title '작품 제목 1부' --author 'AI 창작' --text-only
 
 # 먼저 실제 그림과 기준을 직접 확인한 뒤 관찰 내용을 적는다.
 python scripts/visual_assets.py record-review --plan /path/to/book/volumes/part-01/production.json --shot p1-bridge --notes '기준 시트와 눈매·가르마·복장 일치. 오른손 도끼와 원고의 부상 없음 확인. 다음 사건 노출 없음.'

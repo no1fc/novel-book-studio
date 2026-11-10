@@ -1,6 +1,6 @@
 ---
 name: novel-book-writer
-description: Use when planning, writing, revising or typesetting Korean novels, anime-style illustrated novels, webtoons or comic books, especially when full-page scene art, consistent characters or multi-volume continuity are requested. 소설 창작·교정, 오른쪽 전면 삽화, 캐릭터 일관성, 웹툰·만화책, TRPG 각색과 책 PDF 제작에 사용한다.
+description: Use when planning, writing, revising, resuming or typesetting Korean novels, illustrated novels, webtoons or comic books, including covers, scene art, consistent characters and multi-volume continuity. 소설 창작·교정, 장편 이어 쓰기, 표지·삽화, 캐릭터 일관성, 웹툰·만화책, TRPG 각색과 책 PDF 제작에 사용한다.
 ---
 
 # 소설에서 한 권의 책까지
@@ -10,7 +10,8 @@ description: Use when planning, writing, revising or typesetting Korean novels, 
 ## 결과물 형식과 공통 캐릭터
 
 - 일반 소설은 기존 집필·책 제작 흐름을 따른다.
-- **애니메이션풍 삽화 소설**은 정지 그림이 포함된 소설이다. [production-loop.md](references/production-loop.md)를 읽고, 선택한 장면을 **오른쪽 독립 한 페이지 전체**에 배치한다. 맞은편 왼쪽 본문에 그 장면이 있어야 한다. 본문 하단 그림은 사용자가 그 방식을 명시했을 때만 구형 도구로 처리한다. 그림이 없는 쪽은 정상 본문으로 흐른다.
+- **그림은 [art-sources.md](references/art-sources.md)의 경로로 마련한다.** 표지나 삽화를 다루기 전에 읽는다. 이 스킬의 스크립트는 그림을 생성하지 않는다. 코드로 그리거나, 요청서를 남겨 외부에서 만든 그림을 반입하거나, 현재 환경에 실제로 있는 생성 도구를 쓴다. 생성 도구가 없다는 이유로 표지와 책 제작을 미루지 않는다.
+- **삽화 소설**은 정지 그림이 포함된 소설이며 화풍은 요청을 따른다. [production-loop.md](references/production-loop.md)를 읽고, 선택한 장면을 **오른쪽 독립 한 페이지 전체**에 배치한다. 맞은편 왼쪽 본문에 그 장면이 있어야 한다. 본문 하단 그림은 사용자가 그 방식을 명시했을 때만 구형 도구로 처리한다. 그림이 없는 쪽은 정상 본문으로 흐른다.
 - **웹툰·만화**는 [visual-formats.md](references/visual-formats.md)를 읽고 원고를 패널 대본으로 각색한다. 웹툰은 세로 스크롤, 만화는 페이지·읽기 순서·말풍선을 설계한다. 소설 삽화를 그대로 줄 세운 결과를 각색 완료라고 하지 않는다. 실제 영상·음성·움직임 제작은 이 도구의 범위가 아니다.
 - 두 장면 이상에 같은 인물이 나오면 [character-consistency.md](references/character-consistency.md)를 읽는다. 모든 권과 파생 형식이 같은 `character-bible.json`과 기준 그림을 참조한다. 고정 외양과 장면별 의상·장비·부상을 구분한다.
 - 실행 가능한 계획 형식과 재개 명령은 [visual-plan.md](references/visual-plan.md)에 있다. `scripts/story_project.py init`은 골격만 만들며 원고나 그림을 제작했다고 표시하지 않는다.
@@ -25,7 +26,7 @@ description: Use when planning, writing, revising or typesetting Korean novels, 
 
 - 짧은 시범: 브리프·참고 기법 메모 + 실제 장면 + 검토를 응답 안에서 간략히 처리한다. 별도 파일·원장·PDF는 요청할 때만 만든다. 완결 책이라고 부르지 않는다.
 - 단편: 조사·설계·검토를 한 메모에 합쳐도 된다.
-- 중장편: 아래 파일을 유지하고 한 장씩 집필·개정한다. 한 번의 출력 한계를 요약으로 메우지 않는다. 중단 시 마지막 완성 장·원장 상태·다음 장 목표를 `progress.md`에 남긴다.
+- 중장편·여러 권·이어 쓰기: 쓰기 전에 [continuity.md](references/continuity.md)를 읽는다. 아래 파일과 연속성 원장을 유지하고 한 장씩 집필·개정한다. 한 번의 출력 한계를 요약으로 메우지 않는다. 장을 완성할 때마다 원장과 `progress.md`를 현재 사실로 고쳐 쓴다.
 - 기존 원고: 원본 보존, 별도 개정본. 사건을 고정할지 재구성할지는 사용자 요청에 따른다.
 
 ## 작업 순서
@@ -36,10 +37,10 @@ description: Use when planning, writing, revising or typesetting Korean novels, 
 
 1. **장르 참고** — [research.md](references/research.md)를 읽고 같은 장르 자료를 직접 열어 비교한다. `research.md`에 출처·읽은 범위·기법·우리 작품의 새 구현을 적는다. 이는 참고 분석이며 모델 재학습이 아니다. 접근하지 못한 원문을 읽었다고 쓰지 않는다.
 2. **상상력과 설계** — [fiction-craft.md](references/fiction-craft.md)를 읽는다. 서로 다른 발상 후보를 짧게 비교해 하나를 선택하고, 욕망·갈등·세계의 제약·결말을 비유 없는 짧은 줄거리로 연결한다. 도입의 상황 단서, 인물의 소개 순서, 주요 선택 전에 필요한 사실과 전달할 자리를 정한다. `story-bible.md`와 `outline.md`에 연표·지식·복선·장별 변화를 남긴다. TRPG 각색일 때만 [adaptation.md](references/adaptation.md)를 추가로 읽는다.
-3. **실제 집필** — 장별 목표·행동·관계 변화가 있는 본문을 `manuscript.md`에 쓴다. 첫 장면에서 시점·처지·당장 목적을 짚게 하고, 새 인물은 역할과 관계를 행동 속에서 소개한다. 중요한 발견 뒤의 해석·반응·선택을 다음 장면에 연결하고 단순 이동·반복은 요약한다. 독자가 상상할 구체성을 보강하되 모든 문장을 묘사로 채우지 않는다.
-4. **개정** — [revision.md](references/revision.md)에 따라 구조·장면·문장을 순차 교정한다. `revision-notes.md`에 문제 문장/장면, 수정, 확인 근거를 기록한다. 첫 장면만 읽는 도입 검사와 인물 소개·장면 전환 검사를 한 뒤, 설정집을 주지 않은 본문 단독 검사에서 답·본문 근거·불명인 부분을 기록한다. 중요한 선택의 이유나 해결 조건이 불명하면 본문을 고친 뒤 다시 검사한다. 점수나 문자 수만으로 문학적 완성도를 인증하지 않는다.
-5. **책 제작** — 원고의 인과관계·결말·누락 검토를 마친 뒤 [book-production.md](references/book-production.md)를 읽고 PDF를 만든다. [cover-design.md](references/cover-design.md)에 따라 장르·정서에 맞는 표지와 글자 색을 선택하고, 몰입에 도움이 되거나 요청된 경우 AI 삽화를 생성해 사용한다. 표지, 속표지, 자동 목차, 본문, 요청된 후일담 순서다. 조사·검토 메모는 본문 밖에 둔다.
-6. **전달** — 원고, PDF, 실제 읽은 참고 목록, 검토 기록을 전달한다. 미검증 항목과 사람 독자 평가 여부를 구분한다. GitHub·외부 출판은 그 작업에 대한 사용자 요청이 있을 때만 수행한다.
+3. **실제 집필** — 장별 목표·행동·관계 변화가 있는 본문을 `manuscript.md`에 쓴다. 분량은 `scripts/story_project.py count`의 실제 수치로 확인한다. 첫 장면에서 시점·처지·당장 목적을 짚게 하고, 새 인물은 역할과 관계를 행동 속에서 소개한다. 중요한 발견 뒤의 해석·반응·선택을 다음 장면에 연결하고 단순 이동·반복은 요약한다. 독자가 상상할 구체성을 보강하되 모든 문장을 묘사로 채우지 않는다.
+4. **개정** — [revision.md](references/revision.md)에 따라 구조·장면·문장을 순차 교정한다. `revision-notes.md`에 문제 문장/장면, 수정, 확인 근거를 기록한다. 첫 장면만 읽는 도입 검사와 인물 소개·장면 전환 검사, 원고 전체의 반복 검사를 한 뒤, 설정집을 주지 않은 본문 단독 검사에서 답·본문 근거·불명인 부분을 기록한다. 중요한 선택의 이유나 해결 조건이 불명하면 본문을 고친 뒤 다시 검사한다. 점수나 문자 수만으로 문학적 완성도를 인증하지 않는다.
+5. **책 제작** — 원고의 인과관계·결말·누락 검토를 마친 뒤 [book-production.md](references/book-production.md)를 읽고 PDF를 만든다. [cover-design.md](references/cover-design.md)에 따라 장르·정서에 맞는 표지 구성과 글자 색, 판형과 본문 조판을 선택한다. 표지 그림과 삽화는 몰입에 도움이 되거나 요청된 경우 [art-sources.md](references/art-sources.md)의 경로로 마련한다. 표지, 속표지, 자동 목차, 본문, 요청된 후일담 순서다. 조사·검토 메모는 본문 밖에 둔다.
+6. **전달** — 원고, PDF, 실제 읽은 참고 목록, 검토 기록을 전달한다. 그림이 있으면 그림마다 마련한 경로와 미완료 여부를 밝힌다. 미검증 항목과 사람 독자 평가 여부를 구분한다. GitHub·외부 출판은 그 작업에 대한 사용자 요청이 있을 때만 수행한다.
 
 ## 완료 판단
 

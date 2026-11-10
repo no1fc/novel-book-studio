@@ -115,6 +115,54 @@ class BookTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertFalse(output.exists())
 
+class TypesettingOptionTests(BookTests):
+    def test_page_size_typography_openers_and_running_heads(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source, output = Path(directory) / "story.md", Path(directory) / "book.pdf"
+            filler = "\n\n".join(f"문단{i:02d}. " + "바람이 창을 두드렸다. " * 12 for i in range(30))
+            source.write_text("# 원고\n\n## 첫째 장\n\n" + filler + "\n\n## 둘째 장\n\n" + filler + "\n", encoding="utf-8")
+            result = self.run_builder(source, output, "바람의 도서관", "--page-size", "sinkook", "--font-size-pt", "12",
+                                      "--line-height", "1.6", "--chapter-opener", "centered", "--running-head",
+                                      "--cover-style", "frame")
+            self.assertEqual(result.returncode, 0, result.stderr)
+            design = json.loads(output.with_suffix(".manifest.json").read_text())["design"]
+            self.assertEqual(design["page_size"], {"name": "sinkook", "width_mm": 152, "height_mm": 225})
+            self.assertEqual((design["cover_style"], design["chapter_opener"], design["running_head"]),
+                             ("frame", "centered", True))
+            with fitz.open(output) as pdf:
+                chapters = json.loads(output.with_suffix(".manifest.json").read_text())["chapters"]
+                for page in pdf:
+                    self.assertAlmostEqual(page.rect.width, 152 * 72 / 25.4, delta=.5)
+                    self.assertAlmostEqual(page.rect.height, 225 * 72 / 25.4, delta=.5)
+                top = lambda number: pdf[number - 1].get_text(clip=fitz.Rect(0, 0, 500, 45)).strip()
+                first = chapters[0]["pdf_page"]
+                self.assertEqual(top(first), "", "A chapter's opening page carries no running head")
+                heads = {top(number) for number in range(first + 1, chapters[1]["pdf_page"])}
+                self.assertEqual(heads, {"바람의 도서관", "첫째 장"})
+                self.assertEqual(top(1) + top(2) + top(3), "", "Front matter carries no running head")
+                body = compact("".join(page.get_text() for page in pdf))
+                self.assertEqual(body.count(compact("문단07. 바람이 창을 두드렸다.")), 2)
+
+    def test_cover_styles_render_one_page_and_reject_misuse(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source, output = Path(directory) / "story.md", Path(directory) / "book.pdf"
+            source.write_text("## 장\n\n본문이다.\n", encoding="utf-8")
+            for style in ("frame", "band", "minimal"):
+                result = self.run_builder(source, output, "물이 빠진 뒤의 우편함", "--cover-style", style,
+                                          "--subtitle", "부제", "--genre", "mystery")
+                self.assertEqual(result.returncode, 0, style + result.stderr)
+                with fitz.open(output) as pdf:
+                    self.assertIn("우편함", pdf[0].get_text())
+                    self.assertIn("차례", pdf[2].get_text())
+            before = output.read_bytes()
+            for extra in (("--cover-style", "band", "--accent-color", "#203040"),
+                          ("--font-size-pt", "20"), ("--line-height", "3"),
+                          ("--page-size", "a4", "--page-art-height-mm", "50")):
+                result = self.run_builder(source, output, "물이 빠진 뒤의 우편함", *extra)
+                self.assertEqual(result.returncode, 2, extra)
+                self.assertEqual(output.read_bytes(), before)
+
+
 class CoverDesignTests(unittest.TestCase):
     run_builder = BookTests.run_builder
 

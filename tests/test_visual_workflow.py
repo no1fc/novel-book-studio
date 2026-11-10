@@ -167,6 +167,66 @@ class VisualWorkflow(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn('pending', result.stdout)
 
+    def test_text_only_project_counts_prose_and_keeps_a_ledger(self):
+        project = self.root / 'plain'
+        result = self.run_cli('story_project.py', 'init', '--project', project, '--title', '글만', '--parts', '1', '--format', 'novel')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertFalse((project / 'character-bible.json').exists())
+        self.assertIn('약속과 회수', (project / 'planning/continuity.md').read_text())
+        (project / 'volumes/part-01/manuscript.md').write_text('# 글만\n\n## 하나\n\n**가나** 다라.\n\n***\n\n마바\n', encoding='utf-8')
+        status = json.loads(self.run_cli('story_project.py', 'status', '--project', project).stdout)
+        self.assertEqual(status['total_chars'], 8)
+        self.assertEqual(status['volumes'][0]['chapters'], [{'title': '하나', 'chars': 8}])
+        counted = json.loads(self.run_cli('story_project.py', 'count', '--manuscript', self.source).stdout)
+        self.assertEqual(counted['sections'][1], {'title': '귀환', 'chars': len('그들은 마을로 돌아왔다.')})
+
+    def test_prompt_sheet_and_draft_work_before_any_art_exists(self):
+        (self.root / 'reference.png').unlink()
+        (self.root / 'scene.png').unlink()
+        sheet = self.root / 'art-requests.md'
+        result = self.run_cli('visual_assets.py', 'export-prompts', '--plan', self.plan, '--output', sheet)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        text = sheet.read_text()
+        for expected in (str(self.root / 'scene.png'), str(self.root / 'reference.png'), '없음', self.excerpt,
+                         'Synthetic fixture used only to exercise page layout.'):
+            self.assertIn(expected, text)
+        self.assertEqual(self.build('--allow-pending-art').returncode, 0, 'Layout draft precedes art')
+        self.assertNotEqual(self.build().returncode, 0, 'Final build still needs real, reviewed art')
+        plain = self.run_cli('build_book.py', '--manuscript', self.source, '--output', self.root / 'plain.pdf',
+                             '--title', '시험 소설', '--author', '조판 검사', '--text-only')
+        self.assertEqual(plain.returncode, 0, plain.stderr)
+        with pymupdf.open(self.root / 'plain.pdf') as pdf:
+            text = ''.join(page.get_text() for page in pdf)
+        self.assertIn(compact(self.excerpt), compact(text))
+        self.assertNotIn('art:', text)
+        self.assertNotIn('대기', text)
+        Image.new('RGB', (1000, 1419), '#456d39').save(self.root / 'scene.png')
+        result = self.run_cli('visual_assets.py', 'record-review', '--plan', self.plan, '--shot', 'bridge', '--notes', '봤다')
+        self.assertNotEqual(result.returncode, 0, 'No review without the character reference')
+        self.assertIn('reference', result.stderr)
+        result = self.run_cli('visual_assets.py', 'export-prompts', '--plan', self.plan, '--output', self.source)
+        self.assertNotEqual(result.returncode, 0, 'Never overwrite the manuscript')
+
+    def test_svg_drawing_renders_to_exact_size(self):
+        import shutil
+        if not any(shutil.which(name) for name in ('google-chrome', 'google-chrome-stable', 'chromium', 'chromium-browser')):
+            self.skipTest('no Chromium-family browser')
+        svg = self.root / 'cover.svg'
+        svg.write_text('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 148 210"><defs><filter id="b">'
+                       '<feGaussianBlur stdDeviation="6"/></filter></defs><rect width="148" height="210" fill="#16263a"/>'
+                       '<circle cx="100" cy="60" r="30" fill="#ffe9a8" filter="url(#b)"/></svg>')
+        result = self.run_cli('render_art.py', '--svg', svg, '--output', self.root / 'cover.png', '--size', 'a5-draft')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        with Image.open(self.root / 'cover.png') as image:
+            self.assertEqual(image.size, (874, 1240))
+            self.assertEqual(image.convert('RGB').getpixel((5, 5)), (0x16, 0x26, 0x3a))
+            glow = image.convert('RGB').getpixel((590, 354))
+            self.assertGreater(glow[0], 200, 'Blurred moon is rendered, not dropped')
+        svg.write_text('<svg xmlns="http://www.w3.org/2000/svg"><rect width="9" height="9" fill="#fff"/></svg>')
+        result = self.run_cli('render_art.py', '--svg', svg, '--output', self.root / 'flat.png', '--size', '200x200')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse((self.root / 'flat.png').exists())
+
     def test_output_manifest_cannot_overwrite_shared_bible(self):
         bible = self.root / 'book.manifest.json'
         bible.write_text(json.dumps({'schema_version': 1, 'style': self.data.pop('style'),

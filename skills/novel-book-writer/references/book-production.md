@@ -4,7 +4,7 @@
 
 본문 파일과 집필 메모를 분리한다. 표지 제목·저자 표기는 사용자가 지정한 것을 쓰며 알 수 없는 저자·출판사·ISBN을 꾸며 넣지 않는다. 생성 도구를 실제 사람 저자로 오인하게 표시하지 않는다. 저자명 미정이면 '창작 예제' 등 사실에 맞는 표기를 협의하거나 명시한다.
 
-기본 결과는 A5 독서용 PDF다. 인쇄소 납품은 별도 규격(재단·도련·색상·제본·등 두께)이 필요하므로 독서용 결과를 인쇄 준비 완료라고 하지 않는다.
+기본 결과는 A5 독서용 PDF이며 `--page-size`로 판형을 바꿀 수 있다. 인쇄소 납품은 별도 규격(재단·도련·색상·제본·등 두께)이 필요하므로 독서용 결과를 인쇄 준비 완료라고 하지 않는다.
 
 ## 기본 제작 도구
 
@@ -30,9 +30,21 @@ python scripts/build_book.py --manuscript /path/to/manuscript.md \
 
 표지 → 속표지 → 자동 목차 → 장별 본문 순서로 제작한다. 표지에는 제목·저자·부제를 두고 본문은 약 11pt, 충분한 행간과 양면 여백으로 읽기 편하게 유지한다. 목차 숫자는 **표지를 1쪽으로 센 PDF 실제 쪽수**이며 각 장으로 이동한다. 별도 본문 쪽번호 체계가 필요하면 도구를 조정한 뒤 링크·라벨·표시 번호를 함께 검증한다.
 
-## 장르 색감과 표지 그림
+## 판형과 본문 조판
 
-[cover-design.md](cover-design.md)에 따라 장르·정서별 색감과 AI 이미지 제작 방향을 정한다. 생성 도구로 만든 그림이나 사용 권한이 있는 로컬 그림을 표지에 삽입할 수 있다.
+| 옵션 | 값 | 판단 |
+|---|---|---|
+| `--page-size` | `a5`(기본), `b6`(128×182mm), `sinkook`(신국판 152×225mm), `a4` | 소설 단행본은 a5·b6·신국판. a4는 사용자가 지정했을 때 |
+| `--font-size-pt` | 9~14, 기본 11 | 작은 판형은 10~10.5, a4는 11.5~12.5 |
+| `--line-height` | 1.4~2.2, 기본 1.75 | 대화가 많으면 1.7 안팎, 긴 문단이 많으면 1.8 안팎 |
+| `--chapter-opener` | `plain`(기본), `rule`, `centered` | `rule`은 장 제목 아래 강조색 짧은 선, `centered`는 넉넉한 위 여백과 가운데 제목 |
+| `--running-head` | 켜면 왼쪽 면에 책 제목, 오른쪽 면에 장 제목 | 장이 여럿인 중장편. 장의 첫 쪽과 표지·목차·삽화 쪽에는 찍히지 않는다 |
+
+여백은 판형 너비에 비례해 정해진다. 쪽수 목표가 있으면 실제 조판 결과로 확인하고, 큰 글자나 넓은 행간으로 쪽수를 채우지 않는다. 선택한 값은 `.manifest.json`의 `design`에 기록된다.
+
+## 장르 색감과 표지
+
+[cover-design.md](cover-design.md)에 따라 장르·정서별 색감과 표지 구성을 정한다. 그림 없는 표지는 `--cover-style classic|frame|band|minimal`에서 고른다. 그림 표지는 [art-sources.md](art-sources.md)의 경로로 마련한 로컬 그림을 삽입한다.
 
 ```bash
 python scripts/build_book.py --manuscript /path/to/manuscript.md \
@@ -44,7 +56,7 @@ python scripts/build_book.py --manuscript /path/to/manuscript.md \
 
 장르 선택: `classic`, `mystery`, `fantasy`, `romance`, `horror`, `sf`, `literary`. 생략 시 `classic`. `--cover-background`, `--cover-text-color`, `--accent-color`, `--heading-color`, `--text-color`, `--paper-color`로 각 역할의 색을 바꿀 수 있다. 색은 따옴표로 감싼 `#RRGGBB` 값이다. 장식 강조색은 글자색과 구분한다. 낮은 글자 대비, 잘못된 색 형식, 없거나 손상된 표지 이미지는 오류로 처리한다.
 
-이미지는 PNG/JPEG/WebP를 지원한다. `--cover-layout auto`가 기본이며 이미지가 있으면 전면 삽화 위에 패널 없는 제목, 없으면 타이포그래피 표지를 만든다. `framed`는 삽화와 제목을 나누어 배치한다. `fullbleed`에서는 `--cover-title-position top|center|bottom`으로 제목을 옮기고 `--cover-title-lines '책 제목|둘째 줄'`로 원제의 의미 단위 줄 나눔을 지정한다. 상세 선택은 표지 제작 지침을 따른다. 빌더는 명시한 로컬 이미지·폰트만 읽으며 외부 이미지를 자동 다운로드하지 않는다. 긴 제목은 그림과 글자 크기를 줄여 배치하며, 그래도 한 쪽을 넘으면 제목·부제·저자 표기를 줄이라는 오류를 반환한다. 이미지 생성 자체는 별도 도구가 담당한다. 이미지가 없으면 장르 색상의 타이포그래피 표지를 만든다. `.manifest.json`에는 적용 색·표지 구도·제목 배치와 표지 이미지 SHA-256이 함께 기록된다.
+이미지는 PNG/JPEG/WebP를 지원한다. `--cover-layout auto`가 기본이며 이미지가 있으면 전면 삽화 위에 패널 없는 제목, 없으면 타이포그래피 표지를 만든다. `framed`는 삽화와 제목을 나누어 배치한다. `fullbleed`에서는 `--cover-title-position top|center|bottom`으로 제목을 옮기고 `--cover-title-lines '책 제목|둘째 줄'`로 원제의 의미 단위 줄 나눔을 지정한다. 상세 선택은 표지 제작 지침을 따른다. 빌더는 명시한 로컬 이미지·폰트만 읽으며 외부 이미지를 자동 다운로드하지 않는다. 긴 제목은 그림과 글자 크기를 줄여 배치하며, 그래도 한 쪽을 넘으면 제목·부제·저자 표기를 줄이라는 오류를 반환한다. 빌더는 그림을 만들지 않는다. 이미지가 없으면 선택한 구성의 타이포그래피 표지를 만든다. `.manifest.json`에는 적용 색·표지 구도·제목 배치와 표지 이미지 SHA-256이 함께 기록된다.
 
 ## 검증과 완료
 
@@ -61,4 +73,4 @@ PDF가 생겼다는 것과 완성됐다는 것은 다르다.
 
 ## 오른쪽 독립 삽화 페이지
 
-애니메이션풍 삽화 소설은 [production-loop.md](production-loop.md)와 [visual-plan.md](visual-plan.md)를 따른다. `--visual-plan production.json`이 오른쪽 전면 삽화를 조판하며, `--allow-pending-art`는 최종본이 아닌 위치 점검 초안이다. 최종본은 삽화 왼쪽의 실제 본문 발췌와 홀수 삽화 쪽을 검사한다. `--page-art-height-mm`는 사용자가 하단 방식을 명시한 기존 작업의 호환 옵션이다.
+삽화 소설은 [production-loop.md](production-loop.md)와 [visual-plan.md](visual-plan.md)를 따른다. `--visual-plan production.json`이 오른쪽 전면 삽화를 조판하며, `--allow-pending-art`는 최종본이 아닌 위치 점검 초안이고, `--text-only`는 `[[art:id]]` 앵커를 건너뛴 삽화 없는 독서본이다. 최종본은 삽화 왼쪽의 실제 본문 발췌와 홀수 삽화 쪽을 검사한다. `--page-art-height-mm`는 사용자가 하단 방식을 명시한 기존 작업의 호환 옵션이다.

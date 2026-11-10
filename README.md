@@ -3,7 +3,19 @@
 
 **Novel Book Studio · 소설책 제작 스킬**
 
-애니메이션풍 삽화 소설, 세로 웹툰, 만화 PDF/CBZ를 지원합니다. 삽화 소설의 장면 그림은 **왼쪽 본문과 마주 보는 오른쪽 독립 한 페이지**를 사용합니다. 모든 권과 파생 형식은 하나의 캐릭터 기준을 공유합니다. 실제 애니메이션 영상 생성 기능은 포함하지 않습니다.
+소설, 삽화 소설, 세로 웹툰, 만화 PDF/CBZ를 지원합니다. 삽화 소설의 장면 그림은 **왼쪽 본문과 마주 보는 오른쪽 독립 한 페이지**를 사용합니다. 모든 권과 파생 형식은 하나의 캐릭터 기준을 공유합니다. 영상 생성 기능은 포함하지 않습니다.
+
+## 그림은 어떻게 마련하나
+
+이 스킬의 스크립트는 그림을 생성하지 않습니다. 이미지 생성 도구가 없는 환경에서도 책이 끝까지 나오도록 세 가지 경로를 둡니다. 자세한 기준은 [그림 마련 지침](skills/novel-book-writer/references/art-sources.md)에 있습니다.
+
+| 경로 | 쓰는 때 | 명령 |
+|---|---|---|
+| 코드로 그리기 | 풍경·사물·상징·실루엣 중심의 표지와 삽화 | `render_art.py --svg art/cover.svg --output art/cover.png --size a5` |
+| 요청서를 남기고 외부 그림 반입 | 얼굴이 보이는 인물, 애니메이션풍·실사풍, 웹툰·만화 | `visual_assets.py export-prompts --plan production.json --output art-requests.md` |
+| 이미지 생성 도구 | 에이전트 환경에 생성 도구가 실제로 있을 때 | 해당 도구의 규약 |
+
+`render_art.py`는 로컬 Chromium 계열 브라우저로 SVG를 정확한 픽셀 크기의 PNG로 만듭니다. 그림을 기다리는 동안에는 `build_book.py --text-only`로 삽화 없는 독서본을 만들 수 있습니다.
 
 ## 전면 삽화와 캐릭터 일관성
 
@@ -53,11 +65,11 @@ python skills/novel-book-writer/scripts/build_visual.py \
 ```bash
 git clone https://github.com/no1fc/novel-book-studio.git
 cd novel-book-studio
-mkdir -p ~/.codex/skills
-cp -R skills/novel-book-writer ~/.codex/skills/
+mkdir -p ~/.claude/skills
+cp -R skills/novel-book-writer ~/.claude/skills/
 ```
 
-Codex에서 새 작업을 열고 `$novel-book-writer`로 호출합니다. Claude Code에서는 같은 폴더를 `~/.claude/skills/` 또는 프로젝트 `.claude/skills/`에 넣어 사용할 수 있습니다. SKILL.md를 지원하는 다른 에이전트는 해당 제품의 설치 경로를 사용합니다. 도구·네트워크·PDF 실행 지원은 환경마다 다르며 모든 제품에서의 실행을 검증한 것은 아닙니다.
+Claude Code에서는 `~/.claude/skills/` 또는 프로젝트 `.claude/skills/`에 넣으면 소설 요청에서 스킬이 선택됩니다. Codex에서는 같은 폴더를 `~/.codex/skills/`에 넣고 `$novel-book-writer`로 호출합니다. SKILL.md를 지원하는 다른 에이전트는 해당 제품의 설치 경로를 사용합니다. 도구·네트워크·PDF 실행 지원은 환경마다 다르며 모든 제품에서의 실행을 검증한 것은 아닙니다.
 
 사용 예:
 
@@ -83,7 +95,7 @@ Codex에서 새 작업을 열고 `$novel-book-writer`로 호출합니다. Claude
 
 이미 정한 조건은 다시 묻지 않습니다. 장르·배경·갈등·분량·분위기·결과물을 정리하며, 미정인 설정은 제안으로 구분합니다. 요청문만 필요하면 그 단계에서 끝냅니다. 실제 제작을 요청하면 기존 집필·검토·PDF 절차로 이어집니다. [요청문 만들기 지침](skills/novel-book-writer/references/request-builder.md)을 참고하세요.
 
-**판형 안내:** 현재 번들 PDF 빌더는 A5 고정입니다. A4 요청문도 만들 수 있지만 실제 A4 제작에는 조판 수정 또는 다른 도구가 필요합니다. A4 전환이 구현되어 있다고 간주하거나 A5로 바꾸어 납품하지 않습니다.
+**판형 안내:** 번들 PDF 빌더는 `--page-size a5|b6|sinkook|a4`를 지원합니다(기본 A5, `sinkook`은 신국판 152×225mm). 그 밖의 판형은 조판 수정이나 다른 도구가 필요하며, 요청과 다른 판형으로 바꾸어 납품하지 않습니다.
 
 ## PDF 도구 준비
 
@@ -100,7 +112,7 @@ python skills/novel-book-writer/scripts/build_book.py \
   --author 'AI 창작 예제' --subtitle '소설책 제작 스킬 · 짧은 시연'
 ```
 
-기본 글꼴은 Noto Serif CJK KR입니다. 다른 환경에서는 `--font-file`로 한글을 지원하는 글꼴을 지정하세요. `--help`가 옵션의 기준입니다. 기본 표지는 타이포그래피로 제작합니다. `--genre`로 장르 색을 선택하고, `--cover-image`로 AI 생성 또는 사용 권한이 있는 그림을 넣을 수 있습니다. AI 생성은 사용하는 에이전트의 이미지 도구가 담당하며 PDF 빌더는 모델을 호출하지 않습니다.
+기본 글꼴은 Noto Serif CJK KR입니다. 다른 환경에서는 `--font-file`로 한글을 지원하는 글꼴을 지정하세요. `--help`가 옵션의 기준입니다. 기본 표지는 타이포그래피로 제작하며 `--cover-style classic|frame|band|minimal`로 구성을 고릅니다. `--genre`로 장르 색을 선택하고, `--cover-image`로 코드로 그린 그림이나 사용 권한이 있는 그림을 넣을 수 있습니다. 본문은 `--font-size-pt`, `--line-height`, `--chapter-opener plain|rule|centered`, `--running-head`로 조정합니다. PDF 빌더는 그림을 만들지 않습니다.
 
 빌더는 제한된 Markdown 원고를 받습니다. 장 제목은 `##`, 문단은 빈 줄, 장면 전환은 `***`를 사용합니다. 수동 목차는 넣지 않습니다. 원고→PDF 도구는 원고를 대신 집필하거나 문학적 완성도를 판정하지 않습니다.
 
@@ -141,4 +153,4 @@ python skills/novel-book-writer/scripts/build_book.py \
 
 `--cover-background`, `--cover-text-color`, `--accent-color`, `--heading-color`, `--text-color`, `--paper-color`는 `'#RRGGBB'`로 덮어쓸 수 있습니다. 지원 이미지는 로컬 PNG/JPEG/WebP입니다. `--cover-layout auto|fullbleed|framed|typographic`으로 구도를 고릅니다. 기본값 `auto`는 이미지가 있으면 전면 삽화, 없으면 타이포그래피입니다. 전면 삽화의 제목은 `--cover-title-position top|center|bottom`으로 실제 글자로 배치합니다. 기본값은 그림 위 직접 조판이며 패널 배경은 `--cover-text-treatment panel`로 선택합니다. `--cover-title-lines '물이 빠진 뒤의|우편함'`처럼 최대 4행으로 나눌 수 있습니다. 실제 표지를 크게·작게 렌더링해 제목과 그림의 관계를 확인해야 합니다.
 
-[표지 제작 지침](skills/novel-book-writer/references/cover-design.md)과 [AI 표지 제작 기록](examples/cover-design.md)을 참고하세요. 이미지 생성은 에이전트의 실제 이미지 도구가 담당하며 이 CLI는 모델을 호출하지 않습니다. 검증용 단색 이미지를 완성 삽화로 납품하지 않습니다.
+[표지 제작 지침](skills/novel-book-writer/references/cover-design.md)과 [AI 표지 제작 기록](examples/cover-design.md)을 참고하세요. 그림은 [그림 마련 지침](skills/novel-book-writer/references/art-sources.md)의 경로로 마련하며 이 CLI는 모델을 호출하지 않습니다. 검증용 단색 이미지를 완성 삽화로 납품하지 않습니다.
